@@ -1,4 +1,4 @@
-const CACHE = 'ox-v1';
+const CACHE = 'ox-v2';
 const SHELL = ['./', 'index.html', 'manifest.webmanifest', 'icon.svg', 'apple-touch-icon.png'];
 const FONT_HOSTS = ['cdn.jsdelivr.net', 'fonts.googleapis.com', 'fonts.gstatic.com'];
 
@@ -21,7 +21,7 @@ self.addEventListener('fetch', e => {
 
   // 네트워크 우선, 실패 시 캐시 (오프라인 대응)
   e.respondWith(
-    fetch(req).then(res => {
+    fetch(req, same ? { cache: 'no-cache' } : undefined).then(res => {
       if (res.ok || res.type === 'opaque') {
         const copy = res.clone();
         caches.open(CACHE).then(c => c.put(req, copy));
