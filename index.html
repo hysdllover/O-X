@@ -964,7 +964,7 @@ if (m) {
 doSync();
 
 if ('serviceWorker' in navigator && location.protocol !== 'file:') {
-  navigator.serviceWorker.register('sw.js').catch(() => {});
+  navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then(r => r.update()).catch(() => {});
 }
 // 테스트용 노출
 window.__ox = { merge, sig, get db() { return db; } };
