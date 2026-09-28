@@ -791,7 +791,7 @@ $('#tNew').addEventListener('keydown', e => { if (e.key === 'Enter') { e.prevent
 
 $('#openSet').onclick = () => {
   $('#sToken').value = sync.token || ''; $('#sGist').value = sync.gistId || '';
-  renderChips(); renderTheme(); syncMsg(); $('#settings').hidden = false;
+  renderChips(); renderTheme(); syncMsg(); $('#settings').hidden = false; doSync();
 };
 $('#closeSet').onclick = () => { $('#settings').hidden = true; };
 $('#settings').addEventListener('click', e => { if (e.target.id === 'settings') $('#settings').hidden = true; });
@@ -821,7 +821,7 @@ const theme = () => OXTheme.norm(db.theme);
 function setTheme(patch) {
   const t = Object.assign(theme(), patch);
   if (patch.colors && !patch.preset) t.preset = 'custom';
-  db.theme = OXTheme.apply(t); db.themeAt = now(); save(); renderTheme();
+  db.theme = OXTheme.apply(t); db.themeAt = now(); save(); scheduleSync(1000); renderTheme();
 }
 function renderTheme() {
   const t = theme(), P = OXTheme.presets, F = OXTheme.fonts;
@@ -863,17 +863,17 @@ function syncMsg(msg, err) {
   if (msg != null) { el.textContent = msg; el.classList.toggle('err', !!err); return; }
   if (!sync.token || !sync.gistId) { el.textContent = '연결 안 됨'; el.classList.remove('err'); return; }
   el.classList.toggle('err', !!lastErr);
-  el.innerHTML = lastErr ? esc(lastErr) : `연결됨 · Gist <code>${esc(sync.gistId)}</code>` +
+  el.innerHTML = lastErr ? esc(lastErr) : `연결됨 (선지·사상가·테마) · Gist <code>${esc(sync.gistId)}</code>` +
     (sync.last ? ` · 마지막 동기화 ${new Date(sync.last).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}` : '');
 }
-function scheduleSync() {
+function scheduleSync(ms = 3000) {
   dirty = true;
   if (!sync.token || !sync.gistId) return;
   setDot('pending');
-  clearTimeout(syncTimer); syncTimer = setTimeout(doSync, 3000);
+  clearTimeout(syncTimer); syncTimer = setTimeout(doSync, ms);
 }
 async function gh(path, opt = {}) {
-  const r = await fetch('https://api.github.com' + path, Object.assign({}, opt, {
+  const r = await fetch('https://api.github.com' + path, Object.assign({ cache: 'no-store' }, opt, {
     headers: Object.assign({ Accept: 'application/vnd.github+json', Authorization: 'Bearer ' + sync.token },
       opt.body ? { 'Content-Type': 'application/json' } : {})
   }));
@@ -886,7 +886,7 @@ async function readRemote() {
   const f = g.files && g.files[GFILE];
   if (!f) return { items: [] };
   let c = f.content;
-  if (f.truncated) c = await (await fetch(f.raw_url)).text();
+  if (f.truncated) c = await (await fetch(f.raw_url, { cache: 'no-store' })).text();
   try { return JSON.parse(c || '{}'); } catch (e) { return { items: [] }; }
 }
 function merge(a, b) {
@@ -914,7 +914,7 @@ async function doSync() {
     const before = sig(db);
     db = merge(db, remote);
     save(true);
-    if (sig(db) !== before) { OXTheme.apply(db.theme); fillSelects(); renderAll(); }
+    if (sig(db) !== before) { OXTheme.apply(db.theme); fillSelects(); renderAll(); if (!$('#settings').hidden) { renderTheme(); renderChips(); } }
     if (sig(db) !== sig(remote)) {
       await gh('/gists/' + encodeURIComponent(sync.gistId), { method: 'PATCH', body: JSON.stringify({ files: { [GFILE]: { content: payload() } } }) });
     }
@@ -949,7 +949,12 @@ $('#sOff').onclick = () => {
   sync = {}; store.set(SKEY, sync); lastErr = ''; setDot(''); $('#sToken').value = ''; $('#sGist').value = ''; syncMsg();
 };
 
-document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') doSync(); });
+// 다른 기기 변경사항 받기: 복귀·포커스 시 + 화면이 보이는 동안 45초마다
+const pull = () => { if (document.visibilityState === 'visible') doSync(); };
+document.addEventListener('visibilitychange', pull);
+window.addEventListener('pageshow', pull);
+window.addEventListener('focus', pull);
+setInterval(pull, 45000);
 
 /* ---------- init ---------- */
 fillSelects();
