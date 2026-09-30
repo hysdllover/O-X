@@ -937,8 +937,10 @@ function syncMsg(msg, err) {
   if (msg != null) { el.textContent = msg; el.classList.toggle('err', !!err); return; }
   if (!sync.token || !sync.gistId) { el.textContent = '연결 안 됨'; el.classList.remove('err'); return; }
   el.classList.toggle('err', !!lastErr);
-  el.innerHTML = lastErr ? esc(lastErr) : `연결됨 (선지·사상가·테마) · Gist <code>${esc(sync.gistId)}</code>` +
-    (sync.last ? ` · 마지막 동기화 ${new Date(sync.last).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}` : '');
+  el.innerHTML = lastErr ? esc(lastErr) : `연결됨 · Gist <code>${esc(sync.gistId.slice(0, 8))}</code>` +
+    (sync.count != null ? ` · 선지 ${sync.count}개` : '') +
+    (sync.last ? ` · ${new Date(sync.last).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })} 동기화` : '') +
+    '<br>기기마다 Gist 앞 8자리가 같으면 정상입니다.';
 }
 function scheduleSync(ms = 3000) {
   dirty = true;
@@ -955,13 +957,38 @@ async function gh(path, opt = {}) {
   return r.json();
 }
 function payload() { return JSON.stringify({ v: 1, app: 'ox', items: db.items, thinkers: db.thinkers, thinkersAt: db.thinkersAt || 0, units: db.units, unitsAt: db.unitsAt || 0, theme: db.theme, themeAt: db.themeAt || 0 }); }
-async function readRemote() {
-  const g = await gh('/gists/' + encodeURIComponent(sync.gistId));
-  const f = g.files && g.files[GFILE];
-  if (!f) return { items: [] };
+async function readGist(id) {
+  const g = await gh('/gists/' + encodeURIComponent(id));
+  const f = g.files && g.files[GFILE], desc = g.description || '';
+  if (!f) return { data: { items: [] }, desc };
   let c = f.content;
   if (f.truncated) c = await (await fetch(f.raw_url, { cache: 'no-store' })).text();
-  try { return JSON.parse(c || '{}'); } catch (e) { return { items: [] }; }
+  try { return { data: JSON.parse(c || '{}'), desc }; } catch (e) { return { data: { items: [] }, desc }; }
+}
+// 선지노트 Gist 목록 (오래된 순). 병합 처리된 Gist는 제외
+const MERGED = '(병합됨) ';
+async function listOxGists() {
+  const list = await gh('/gists?per_page=100');
+  return list.filter(g => g.files && g.files[GFILE] && !(g.description || '').startsWith(MERGED))
+    .sort((a, b) => a.created_at < b.created_at ? -1 : 1);
+}
+// 기기마다 다른 Gist가 생긴 경우: 가장 오래된 Gist 하나로 합치고 그쪽으로 전환
+let unified = false;
+async function unify() {
+  unified = true;
+  const list = await listOxGists();
+  const mainId = list.length ? list[0].id : sync.gistId;
+  const others = list.slice(1).map(g => g.id);
+  if (sync.gistId && sync.gistId !== mainId && !others.includes(sync.gistId)) others.push(sync.gistId);
+  for (const id of others) {
+    const r = await readGist(id);
+    db = merge(db, r.data);
+    if (!r.desc.startsWith(MERGED)) {
+      await gh('/gists/' + encodeURIComponent(id), { method: 'PATCH', body: JSON.stringify({ description: MERGED + (r.desc || '생윤 선지노트') }) });
+    }
+  }
+  if (mainId !== sync.gistId) { sync.gistId = mainId; store.set(SKEY, sync); $('#sGist').value = mainId; }
+  if (others.length) { save(true); OXTheme.apply(db.theme); fillSelects(); renderAll(); }
 }
 function merge(a, b) {
   const m = new Map();
@@ -986,7 +1013,10 @@ async function doSync() {
   syncing = true; dirty = false; clearTimeout(syncTimer);
   setDot('busy'); syncMsg('동기화 중…');
   try {
-    const remote = await readRemote();
+    if (!unified) await unify();
+    let r = await readGist(sync.gistId);
+    if (r.desc.startsWith(MERGED)) { await unify(); r = await readGist(sync.gistId); }   // 다른 기기가 합친 경우
+    const remote = r.data;
     const before = sig(db);
     db = merge(db, remote);
     save(true);
@@ -994,7 +1024,7 @@ async function doSync() {
     if (sig(db) !== sig(remote)) {
       await gh('/gists/' + encodeURIComponent(sync.gistId), { method: 'PATCH', body: JSON.stringify({ files: { [GFILE]: { content: payload() } } }) });
     }
-    sync.last = now(); store.set(SKEY, sync); lastErr = '';
+    sync.last = now(); sync.count = live().length; store.set(SKEY, sync); lastErr = '';
     setDot('ok'); syncMsg();
   } catch (e) {
     lastErr = e.message || '네트워크 오류'; setDot('err'); syncMsg();
@@ -1009,11 +1039,18 @@ $('#sConnect').onclick = async () => {
   if (!token) { syncMsg('토큰을 입력하세요', true); return; }
   sync = { token, gistId }; lastErr = '';
   try {
+    unified = false;
     if (!gistId) {
+      syncMsg('Gist 찾는 중…');
+      const list = await listOxGists();
+      if (list.length) sync.gistId = list[0].id;   // 이미 있는 선지노트 Gist에 연결
+    }
+    if (!sync.gistId) {
       syncMsg('Gist 만드는 중…');
       const g = await gh('/gists', { method: 'POST', body: JSON.stringify({ description: '생윤 선지노트 O-X 데이터', public: false, files: { [GFILE]: { content: payload() } } }) });
-      sync.gistId = g.id; $('#sGist').value = g.id;
+      sync.gistId = g.id; unified = true;
     }
+    $('#sGist').value = sync.gistId;
     store.set(SKEY, sync);
     await doSync();
     if (!lastErr) toast('연결했습니다');
