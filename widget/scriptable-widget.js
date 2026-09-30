@@ -70,7 +70,7 @@ async function build() {
 
   const foot = wg.addStack();
   foot.centerAlignContent();
-  const meta = foot.addText([it.thinker, it.unit ? it.unit.split('.')[0] + '단원' : ''].filter(Boolean).join(' · '));
+  const meta = foot.addText([it.thinker, it.unit ? (it.unit.match(/^\s*(\d+)\s*\./) ? it.unit.match(/^\s*(\d+)/)[1] + '단원' : it.unit) : ''].filter(Boolean).join(' · '));
   meta.font = Font.lightSystemFont(9); meta.textColor = C.soft; meta.lineLimit = 1;
   foot.addSpacer();
   const a = foot.addText(hide ? '?' : it.answer);

@@ -211,6 +211,12 @@ select{-webkit-appearance:none;appearance:none;padding-right:28px;
   background:var(--navy-bg);color:var(--navy)}
 .chip button{width:18px;height:18px;color:var(--soft);font-size:0.9231rem;line-height:1}
 .status{font-size:0.8846rem;color:var(--soft);min-height:18px}
+.units{display:flex;flex-direction:column;gap:6px}
+.urow{display:flex;align-items:center;gap:4px}
+.urow input{flex:1;min-width:0;min-height:36px;padding:6px 10px}
+.urow button{width:30px;height:36px;color:var(--soft);font-size:0.9231rem;flex:none}
+.urow button:disabled{opacity:.25}
+.urow .n{font-size:0.8077rem;color:var(--faint);width:34px;text-align:right;flex:none}
 .presets{display:grid;grid-template-columns:repeat(auto-fill,minmax(88px,1fr));gap:6px}
 .preset{display:flex;flex-direction:column;align-items:flex-start;gap:6px;padding:9px 10px;border:.5px solid var(--line);
   border-radius:calc(var(--r) * .8);font-size:0.8462rem;color:var(--soft);text-align:left}
@@ -442,6 +448,12 @@ code{font-size:0.8462rem;background:var(--bg);padding:1px 5px;border-radius:4px;
       <div class="opt"><span>여백</span><div class="seg" id="thDensity"><button type="button" data-v="0.8">좁게</button><button type="button" data-v="1">보통</button><button type="button" data-v="1.25">넓게</button></div></div>
       <button class="btn ghost" id="thReset">기본값으로</button>
     </section>
+    <section class="stack">
+      <h3>단원</h3>
+      <div class="units" id="units"></div>
+      <div class="row"><input id="uNew" placeholder="새 단원 (예: 7. 윤리 사상)"><button class="btn" id="uAdd" style="flex:none">추가</button></div>
+      <button class="btn ghost" id="uReset">기본 단원으로</button>
+    </section>
     <section>
       <h3>사상가 태그</h3>
       <div class="chips" id="chips"></div>
@@ -486,12 +498,13 @@ const store = {
 
 let db = store.get(KEY, null);
 if (!db || !Array.isArray(db.items)) db = { items: [], thinkers: DEFAULT_THINKERS.slice(), thinkersAt: 0 };
+if (!Array.isArray(db.units)) { db.units = UNITS.slice(); db.unitsAt = db.unitsAt || 0; }
 let sync = store.get(SKEY, {}) || {};
 const ui = Object.assign({ tab: 'note', filt: { q: '', thinker: '', unit: '', ans: '' } }, store.get(UKEY, {}));
 
 const live = () => db.items.filter(i => !i.deleted);
 const byId = id => db.items.find(i => i.id === id && !i.deleted);
-const unitShort = u => u ? u.split('.')[0] + '단원' : '';
+const unitShort = u => { if (!u) return ''; const m = u.match(/^\s*(\d+)\s*\./); return m ? m[1] + '단원' : u; };
 
 function save(silent) {
   store.set(KEY, db);
@@ -512,18 +525,24 @@ function thinkerList() {
   live().forEach(i => i.thinker && set.add(i.thinker));
   return [...set];
 }
+function unitList() {
+  const set = new Set(db.units);
+  live().forEach(i => i.unit && set.add(i.unit));
+  return [...set];
+}
 function fillSelects() {
   const th = thinkerList();
   const opt = (v, t) => `<option value="${esc(v)}">${esc(t)}</option>`;
   const thAll = opt('', '전체 사상가') + th.map(t => opt(t, t)).join('');
-  const unAll = opt('', '전체 단원') + UNITS.map(u => opt(u, u)).join('');
+  const un = unitList();
+  const unAll = opt('', '전체 단원') + un.map(u => opt(u, u)).join('');
   for (const id of ['qThinker', 'zThinker', 'pThinker']) { const s = $('#' + id), v = s.value; s.innerHTML = thAll; s.value = v; }
   for (const id of ['qUnit', 'zUnit', 'pUnit']) { const s = $('#' + id), v = s.value; s.innerHTML = unAll; s.value = v; }
   const f = $('#fThinker'), fv = f.value;
   f.innerHTML = opt('', '사상가 선택') + th.map(t => opt(t, t)).join('');
   f.value = fv;
   const u = $('#fUnit'), uv = u.value;
-  u.innerHTML = opt('', '단원 선택') + UNITS.map(x => opt(x, x)).join('');
+  u.innerHTML = opt('', '단원 선택') + un.map(x => opt(x, x)).join('');
   u.value = uv;
 }
 
@@ -789,9 +808,64 @@ $('#tAdd').onclick = () => {
 };
 $('#tNew').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); $('#tAdd').click(); } });
 
+/* 단원 관리 */
+function renderUnits() {
+  const n = db.units.length;
+  $('#units').innerHTML = db.units.map((u, i) => {
+    const c = live().filter(x => x.unit === u).length;
+    return `<div class="urow" data-i="${i}"><input value="${esc(u)}" aria-label="단원 이름">
+      <span class="n">${c ? c + '개' : ''}</span>
+      <button data-a="up" ${i ? '' : 'disabled'} aria-label="위로">↑</button>
+      <button data-a="down" ${i < n - 1 ? '' : 'disabled'} aria-label="아래로">↓</button>
+      <button data-a="del" aria-label="삭제">×</button></div>`;
+  }).join('') || '<p class="hint">단원이 없습니다</p>';
+}
+function unitsChanged() { db.unitsAt = now(); save(); renderUnits(); fillSelects(); renderAll(); }
+function renameUnit(i, name) {
+  const old = db.units[i]; name = name.trim();
+  if (!name || name === old) { renderUnits(); return; }
+  if (db.units.includes(name)) { toast('이미 있는 단원입니다'); renderUnits(); return; }
+  db.units[i] = name;
+  let n = 0;
+  live().forEach(it => { if (it.unit === old) { it.unit = name; touch(it); n++; } });
+  if (ui.filt.unit === old) { ui.filt.unit = name; saveUI(); }
+  // 선택돼 있던 단원은 새 이름으로 유지
+  const sel = ['qUnit', 'zUnit', 'pUnit', 'fUnit'].filter(id => $('#' + id).value === old);
+  unitsChanged();
+  sel.forEach(id => { $('#' + id).value = name; });
+  renderAll();
+  toast(n ? `이름을 바꾸고 선지 ${n}개에 반영했습니다` : '이름을 바꿨습니다');
+}
+$('#units').addEventListener('change', e => {
+  const r = e.target.closest('.urow'); if (r && e.target.tagName === 'INPUT') renameUnit(+r.dataset.i, e.target.value);
+});
+$('#units').addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.tagName === 'INPUT') { e.preventDefault(); e.target.blur(); } });
+$('#units').addEventListener('click', e => {
+  const b = e.target.closest('button[data-a]'); if (!b) return;
+  const i = +b.closest('.urow').dataset.i, u = db.units, a = b.dataset.a;
+  if (a === 'up' && i > 0) [u[i - 1], u[i]] = [u[i], u[i - 1]];
+  else if (a === 'down' && i < u.length - 1) [u[i + 1], u[i]] = [u[i], u[i + 1]];
+  else if (a === 'del') {
+    const c = live().filter(x => x.unit === u[i]).length;
+    if (!confirm(c ? `'${u[i]}' 단원을 목록에서 삭제할까요?\n이 단원의 선지 ${c}개는 단원 표시가 그대로 남습니다.` : `'${u[i]}' 단원을 삭제할까요?`)) return;
+    u.splice(i, 1);
+  } else return;
+  unitsChanged();
+});
+$('#uAdd').onclick = () => {
+  const v = $('#uNew').value.trim(); if (!v) return;
+  if (db.units.includes(v)) { toast('이미 있는 단원입니다'); return; }
+  db.units.push(v); $('#uNew').value = ''; unitsChanged();
+};
+$('#uNew').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); $('#uAdd').click(); } });
+$('#uReset').onclick = () => {
+  if (!confirm('단원 목록을 기본 6개 단원으로 되돌릴까요? (선지의 단원 표시는 그대로 유지)')) return;
+  db.units = UNITS.slice(); unitsChanged();
+};
+
 $('#openSet').onclick = () => {
   $('#sToken').value = sync.token || ''; $('#sGist').value = sync.gistId || '';
-  renderChips(); renderTheme(); syncMsg(); $('#settings').hidden = false; doSync();
+  renderChips(); renderUnits(); renderTheme(); syncMsg(); $('#settings').hidden = false; doSync();
 };
 $('#closeSet').onclick = () => { $('#settings').hidden = true; };
 $('#settings').addEventListener('click', e => { if (e.target.id === 'settings') $('#settings').hidden = true; });
@@ -810,7 +884,7 @@ $('#bFile').onchange = async e => {
   try {
     const data = JSON.parse(await f.text());
     if (!Array.isArray(data.items)) throw new Error();
-    db = merge(db, data); save(); OXTheme.apply(db.theme); fillSelects(); renderChips(); renderAll(); toast('가져왔습니다');
+    db = merge(db, data); save(); OXTheme.apply(db.theme); fillSelects(); renderChips(); renderUnits(); renderAll(); toast('가져왔습니다');
   } catch (err) { toast('올바른 백업 파일이 아닙니다'); }
   e.target.value = '';
 };
@@ -880,7 +954,7 @@ async function gh(path, opt = {}) {
   if (!r.ok) throw new Error({ 401: '토큰이 올바르지 않습니다', 403: '권한이 없습니다 (gist 권한 확인)', 404: 'Gist를 찾을 수 없습니다' }[r.status] || '동기화 실패 (' + r.status + ')');
   return r.json();
 }
-function payload() { return JSON.stringify({ v: 1, app: 'ox', items: db.items, thinkers: db.thinkers, thinkersAt: db.thinkersAt || 0, theme: db.theme, themeAt: db.themeAt || 0 }); }
+function payload() { return JSON.stringify({ v: 1, app: 'ox', items: db.items, thinkers: db.thinkers, thinkersAt: db.thinkersAt || 0, units: db.units, unitsAt: db.unitsAt || 0, theme: db.theme, themeAt: db.themeAt || 0 }); }
 async function readRemote() {
   const g = await gh('/gists/' + encodeURIComponent(sync.gistId));
   const f = g.files && g.files[GFILE];
@@ -899,10 +973,12 @@ function merge(a, b) {
   }
   const useB = (b.thinkersAt || 0) > (a.thinkersAt || 0) && Array.isArray(b.thinkers);
   const useT = (b.themeAt || 0) > (a.themeAt || 0) && b.theme;
+  const useU = (b.unitsAt || 0) > (a.unitsAt || 0) && Array.isArray(b.units);
   return { items: [...m.values()], thinkers: (useB ? b.thinkers : a.thinkers) || DEFAULT_THINKERS.slice(), thinkersAt: Math.max(a.thinkersAt || 0, b.thinkersAt || 0),
+    units: (useU ? b.units : a.units) || UNITS.slice(), unitsAt: Math.max(a.unitsAt || 0, b.unitsAt || 0),
     theme: useT ? b.theme : a.theme, themeAt: Math.max(a.themeAt || 0, b.themeAt || 0) };
 }
-const sig = x => (x.items || []).map(i => i.id + ':' + (i.updatedAt || 0)).sort().join(',') + '|' + (x.thinkersAt || 0) + '|' + (x.themeAt || 0);
+const sig = x => (x.items || []).map(i => i.id + ':' + (i.updatedAt || 0)).sort().join(',') + '|' + (x.thinkersAt || 0) + '|' + (x.themeAt || 0) + '|' + (x.unitsAt || 0);
 
 async function doSync() {
   if (!sync.token || !sync.gistId) return;
@@ -914,7 +990,7 @@ async function doSync() {
     const before = sig(db);
     db = merge(db, remote);
     save(true);
-    if (sig(db) !== before) { OXTheme.apply(db.theme); fillSelects(); renderAll(); if (!$('#settings').hidden) { renderTheme(); renderChips(); } }
+    if (sig(db) !== before) { OXTheme.apply(db.theme); fillSelects(); renderAll(); if (!$('#settings').hidden) { renderTheme(); renderChips(); renderUnits(); } }
     if (sig(db) !== sig(remote)) {
       await gh('/gists/' + encodeURIComponent(sync.gistId), { method: 'PATCH', body: JSON.stringify({ files: { [GFILE]: { content: payload() } } }) });
     }
