@@ -18,7 +18,9 @@ Settings → Pages → Branch 선택 → `https://<아이디>.github.io/O-X/` �
 ## 기기 간 동기화
 1. GitHub → Settings → Developer settings → Personal access tokens → **gist** 권한만 체크해 토큰 생성
 2. 앱 ⚙︎ 설정 → 토큰 입력, Gist ID 비우고 **연결** (비공개 Gist 생성)
-3. 다른 기기: 같은 토큰 + 표시된 Gist ID 입력 후 **연결**
+3. 다른 기기: 같은 토큰 입력 후 **연결** (Gist ID는 비워도 기존 선지노트 Gist를 자동으로 찾음)
+
+기기마다 Gist가 따로 만들어진 경우 앱 실행 시 가장 오래된 Gist로 자동 병합됨 (나머지는 설명에 `(병합됨)` 표시).
 
 앱을 열 때·변경 3초 후 자동 동기화. 항목별 최신 수정본 우선으로 병합.
 iOS는 Safari와 홈 화면 앱의 저장소가 분리되어 있고 오래 쓰지 않으면 지워질 수 있으니 동기화나 JSON 백업을 권장.
