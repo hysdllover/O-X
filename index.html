@@ -109,6 +109,13 @@ select{-webkit-appearance:none;appearance:none;padding-right:28px;
 .today{margin:4px 0 14px;padding:calc(18px * var(--pad)) 18px calc(16px * var(--pad));border-radius:var(--r);background:var(--violet-bg);position:relative}
 .today .label{color:var(--violet)}
 .today p.t{margin:0;font:var(--fw) 1.1154rem/1.75 var(--serif)}
+.st{display:flex;flex-wrap:wrap;gap:4px;margin:6px 0 0}
+.sc{font-size:0.7692rem;padding:1px 8px;border-radius:10px;background:var(--olive-bg);color:var(--olive);letter-spacing:.04em}
+.sc.X{background:var(--rose-bg);color:var(--rose)}
+.srow{display:flex;gap:6px;align-items:center}
+.srow select{flex:1;min-width:0}
+.srow .x{width:30px;height:38px;color:var(--soft);flex:none}
+.qlabel{display:inline-block;font-size:0.8077rem;letter-spacing:.1em;color:var(--violet);background:var(--violet-bg);padding:2px 10px;border-radius:10px;margin:0 0 12px}
 .today .foot{display:flex;align-items:center;gap:10px;margin-top:10px;font-size:0.8462rem;color:var(--soft)}
 .today .foot .sp{flex:1}
 .today .reveal{font-size:0.8462rem;letter-spacing:.12em;color:var(--violet);min-height:30px}
@@ -173,27 +180,28 @@ select{-webkit-appearance:none;appearance:none;padding-right:28px;
 .head-row h2{margin:0;flex:1}
 .stat{font:var(--fw) 1.6923rem/1 var(--serif);color:var(--rose)}
 
-/* print sheet (screen preview) */
+/* print sheet: A4 실제 폭으로 그리고 화면에서는 축소해 미리보기 */
 .popts{margin-bottom:14px}
 .popts .row+.row{margin-top:8px}
 .sheetwrap{background:var(--line);border-radius:var(--r);padding:12px;overflow:hidden}
-.sheet{background:#fff;color:#2b2f38;max-width:210mm;margin:0 auto;padding:16px;font:var(--fw) 0.8846rem/1.6 var(--sans)}
-@media (min-width:820px){.sheet{padding:14mm 12mm}}
-.sheet h1{font:var(--fw) 1.3077rem var(--serif);letter-spacing:.08em;margin:0}
-.sheet .sub{display:flex;flex-wrap:wrap;gap:2px 12px;justify-content:space-between;font-size:0.7308rem;color:#8a8f99;letter-spacing:.1em;
-  margin:6px 0 14px;padding-bottom:8px;border-bottom:.5px solid #c9ccd3}
-.sheet h3{font:400 0.9231rem var(--serif);color:var(--c-navy);letter-spacing:.08em;margin:16px 0 6px;break-after:avoid}
+.sheetbox{position:relative}
+.sheet{background:#fff;color:#2b2f38;width:210mm;margin:0 auto;padding:14mm 12mm;font:var(--fw) 10pt/1.5 var(--sans);transform-origin:top left}
+.sheet h1{font:var(--fw) 15pt var(--serif);letter-spacing:.08em;margin:0}
+.sheet .sub{display:flex;flex-wrap:wrap;gap:2px 12px;justify-content:space-between;font-size:7.5pt;color:#8a8f99;letter-spacing:.1em;
+  margin:5px 0 12px;padding-bottom:6px;border-bottom:.5px solid #c9ccd3}
+.sheet h3{font:400 10pt var(--serif);color:var(--c-navy);letter-spacing:.08em;margin:14px 0 4px;break-after:avoid}
 .sheet table{width:100%;border-collapse:collapse;table-layout:fixed}
-.sheet th{font-weight:400;font-size:0.6923rem;color:#8a8f99;letter-spacing:.12em;text-align:left;padding:4px 6px;border-bottom:.5px solid #c9ccd3}
-.sheet td{padding:6px;border-bottom:.5px solid #e4e5e9;vertical-align:top;overflow-wrap:anywhere}
+.sheet th{font-weight:400;font-size:7pt;color:#8a8f99;letter-spacing:.1em;text-align:left;padding:3px 5px;border-bottom:.5px solid #c9ccd3}
+.sheet td{padding:4px 5px;border-bottom:.5px solid #e4e5e9;vertical-align:top}
 .sheet tr{break-inside:avoid}
-.sheet .no{width:26px;color:#a0a5ae;font-size:0.7308rem}
-.sheet .a{width:34px;text-align:center;font:400 0.9231rem var(--serif)}
+.sheet .no{width:24px;color:#a0a5ae;font-size:7.5pt;padding-top:5px}
+.sheet .tx{display:block;word-break:keep-all;overflow-wrap:normal;line-height:1.5}
+.sheet .nt{display:block;color:var(--c-navy);font-size:8pt;word-break:keep-all;margin-top:1px}
+.sheet .a{width:30px;text-align:center;font:400 10pt var(--serif)}
 .sheet .a.O{color:var(--c-olive)} .sheet .a.X{color:var(--c-rose)}
-.sheet .nt{color:var(--c-navy);font-size:0.8077rem}
-.sheet .blank{display:inline-block;width:20px;height:16px;border:.5px solid #b9bcc4;border-radius:3px}
-.sheet .key{margin-top:18px;padding-top:8px;border-top:.5px solid #c9ccd3;font-size:0.7692rem;color:#555;break-inside:avoid}
-.sheet .key span{display:inline-block;margin:0 10px 2px 0}
+.sheet th.tc{width:46px;text-align:center;font-size:6.5pt;letter-spacing:0;word-break:break-all;line-height:1.3;padding:3px 2px;vertical-align:bottom}
+.sheet th.a{white-space:nowrap;letter-spacing:0;text-align:center;padding:3px 0}
+.sheet td.a.tc{width:46px}
 .sheet .empty{color:#aaa}
 
 /* settings overlay */
@@ -247,8 +255,8 @@ code{font-size:0.8462rem;background:var(--bg);padding:1px 5px;border-radius:4px;
   #v-print{display:block!important}
   main{padding:0;max-width:none}
   .sheetwrap{background:none;padding:0;border-radius:0}
-  .sheet{max-width:none;padding:0;font-size:10.5pt}
-  .sheet h1{font-size:15pt}
+  .sheetbox{height:auto!important}
+  .sheet{width:auto;padding:0;transform:none!important}
   .sheet thead{display:table-header-group}
 }
 </style>
@@ -352,6 +360,8 @@ code{font-size:0.8462rem;background:var(--bg);padding:1px 5px;border-radius:4px;
           <select id="fThinker" aria-label="사상가"></select>
         </div>
         <select id="fUnit" aria-label="단원"></select>
+        <div class="stack" id="fStances"></div>
+        <button type="button" class="btn ghost block" id="addStance">+ 사상가별 입장 O/X</button>
         <input id="fNote" placeholder="해설 · 틀린 부분 교정 (선택)">
         <input id="fSource" placeholder="출처 예) 2025 수능 7번 (선택)">
         <button class="btn primary block" type="submit" id="fSubmit">추가</button>
@@ -402,11 +412,10 @@ code{font-size:0.8462rem;background:var(--bg);padding:1px 5px;border-radius:4px;
       <div class="row"><select id="pThinker" aria-label="사상가"></select><select id="pUnit" aria-label="단원"></select></div>
       <div class="row">
         <div class="seg" id="pRange"><button type="button" data-v="all" class="on">전체</button><button type="button" data-v="wrong">오답</button><button type="button" data-v="star">별표</button></div>
-        <div class="seg" id="pMode"><button type="button" data-v="note" class="on">정리본</button><button type="button" data-v="test">시험지</button></div>
         <button class="btn primary" id="pPrint" style="flex:none">인쇄 · PDF</button>
       </div>
     </div>
-    <div class="sheetwrap"><div class="sheet" id="sheet"></div></div>
+    <div class="sheetwrap"><div class="sheetbox" id="sheetbox"><div class="sheet" id="sheet"></div></div></div>
   </section>
 </main>
 
@@ -544,6 +553,11 @@ function fillSelects() {
   const u = $('#fUnit'), uv = u.value;
   u.innerHTML = opt('', '단원 선택') + un.map(x => opt(x, x)).join('');
   u.value = uv;
+  $$('#fStances select').forEach(s => { const v = s.value; s.innerHTML = thOpts(v); s.value = v; });
+}
+function thOpts(v) {
+  const th = thinkerList(); if (v && !th.includes(v)) th.push(v);
+  return `<option value="">사상가</option>` + th.map(t => `<option value="${esc(t)}">${esc(t)}</option>`).join('');
 }
 
 function segVal(id) { const b = $('#' + id + ' .on'); return b ? b.dataset.v : ''; }
@@ -555,13 +569,19 @@ function bindSeg(id, cb) {
   });
 }
 
+const stanceOf = (i, t) => (i.stances || []).find(s => s.t === t);
+const hasThinker = (i, t) => i.thinker === t || !!stanceOf(i, t);
 function pick(items, { thinker = '', unit = '', range = 'all' } = {}) {
   return items.filter(i =>
-    (!thinker || i.thinker === thinker) && (!unit || i.unit === unit) &&
+    (!thinker || hasThinker(i, thinker)) && (!unit || i.unit === unit) &&
     (range === 'all' || (range === 'wrong' && i.wrong > 0) || (range === 'star' && i.starred)));
 }
 
 /* ---------- item row ---------- */
+function stanceHTML(it) {
+  const s = it.stances || [];
+  return s.length ? `<p class="st">${s.map(x => `<span class="sc ${x.a}">${esc(x.t)} ${x.a}</span>`).join('')}</p>` : '';
+}
 function itemHTML(it, mode) {
   const meta = [it.thinker, unitShort(it.unit), it.source].filter(Boolean).map(esc).join(' · ');
   const w = it.wrong ? `<span class="w"> · 오답 ${it.wrong}</span>` : '';
@@ -570,7 +590,7 @@ function itemHTML(it, mode) {
     : `<button class="star ${it.starred ? 'on' : ''}" data-act="star" aria-label="별표">${it.starred ? '★' : '☆'}</button><button data-act="edit">수정</button><button data-act="del">삭제</button>`;
   return `<li class="item" data-id="${esc(it.id)}">
     <span class="badge ${it.answer}">${it.answer}</span>
-    <div class="body"><p class="t">${esc(it.text)}</p>${it.note ? `<p class="n">→ ${esc(it.note)}</p>` : ''}
+    <div class="body"><p class="t">${esc(it.text)}</p>${stanceHTML(it)}${it.note ? `<p class="n">→ ${esc(it.note)}</p>` : ''}
     <p class="m">${meta}${w}</p></div>
     <div class="acts">${acts}</div></li>`;
 }
@@ -589,7 +609,7 @@ function renderToday() {
   el.innerHTML = `<p class="label">오늘의 선지</p><p class="t">${esc(it.text)}</p>
     <div class="foot"><span>${esc([it.thinker, unitShort(it.unit)].filter(Boolean).join(' · '))}</span><span class="sp"></span>
     <button class="reveal" id="reveal">정답 보기</button></div>
-    <div id="revealBox" hidden style="margin-top:8px;font-size:.9615rem"><span class="badge ${it.answer}" style="display:inline-grid;width:22px;height:22px;margin-right:8px;vertical-align:middle">${it.answer}</span>${esc(it.note || '')}</div>`;
+    <div id="revealBox" hidden style="margin-top:8px;font-size:.9615rem"><span class="badge ${it.answer}" style="display:inline-grid;width:22px;height:22px;margin-right:8px;vertical-align:middle">${it.answer}</span>${esc(it.note || '')}${stanceHTML(it)}</div>`;
   $('#reveal').onclick = () => { const b = $('#revealBox'); b.hidden = !b.hidden; $('#reveal').textContent = b.hidden ? '정답 보기' : '가리기'; };
 }
 
@@ -599,8 +619,8 @@ function renderList() {
   const f = ui.filt, q = f.q.trim().toLowerCase();
   const all = live();
   const rows = all.filter(i =>
-    (!f.thinker || i.thinker === f.thinker) && (!f.unit || i.unit === f.unit) && (!f.ans || i.answer === f.ans) &&
-    (!q || [i.text, i.note, i.source, i.thinker].join(' ').toLowerCase().includes(q)))
+    (!f.thinker || hasThinker(i, f.thinker)) && (!f.unit || i.unit === f.unit) && (!f.ans || i.answer === f.ans) &&
+    (!q || [i.text, i.note, i.source, i.thinker, ...(i.stances || []).map(x => x.t)].join(' ').toLowerCase().includes(q)))
     .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
   $('#count').textContent = `${rows.length} / ${all.length} 선지`;
   const o = rows.filter(i => i.answer === 'O').length;
@@ -609,9 +629,29 @@ function renderList() {
 }
 
 function setAns(v) { $$('#fAns button').forEach(b => b.classList.toggle('on', b.dataset.v === v)); }
+function addStanceRow(t = '', a = 'O') {
+  const r = document.createElement('div'); r.className = 'srow';
+  r.innerHTML = `<select aria-label="사상가">${thOpts(t)}</select>
+    <div class="seg ox"><button type="button" data-v="O" class="${a === 'O' ? 'on' : ''}">O</button><button type="button" data-v="X" class="${a === 'X' ? 'on' : ''}">X</button></div>
+    <button type="button" class="x" aria-label="삭제">×</button>`;
+  r.querySelector('select').value = t;
+  $('#fStances').appendChild(r);
+  return r;
+}
+function readStances() {
+  const seen = new Set();
+  return $$('#fStances .srow').map(r => ({ t: r.querySelector('select').value, a: r.querySelector('.seg .on').dataset.v }))
+    .filter(x => x.t && !seen.has(x.t) && seen.add(x.t));
+}
+$('#addStance').onclick = () => addStanceRow().querySelector('select').focus();
+$('#fStances').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  if (b.classList.contains('x')) { b.closest('.srow').remove(); return; }
+  if (b.dataset.v) b.parentNode.querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b));
+});
 function resetForm() {
   editingId = null;
-  $('#fText').value = ''; $('#fNote').value = '';
+  $('#fText').value = ''; $('#fNote').value = ''; $('#fStances').innerHTML = '';
   $('#formTitle').textContent = '새 선지'; $('#fSubmit').textContent = '추가'; $('#cancelEdit').hidden = true;
   setAns('O');
 }
@@ -619,6 +659,7 @@ function startEdit(it) {
   editingId = it.id;
   $('#fText').value = it.text; $('#fNote').value = it.note || ''; $('#fSource').value = it.source || '';
   $('#fThinker').value = it.thinker || ''; $('#fUnit').value = it.unit || ''; setAns(it.answer);
+  $('#fStances').innerHTML = ''; (it.stances || []).forEach(x => addStanceRow(x.t, x.a));
   $('#formTitle').textContent = '선지 수정'; $('#fSubmit').textContent = '저장'; $('#cancelEdit').hidden = false;
   $('#form').scrollIntoView({ behavior: 'smooth', block: 'start' });
   $('#fText').focus({ preventScroll: true });
@@ -628,7 +669,7 @@ $('#form').addEventListener('submit', e => {
   e.preventDefault();
   const text = $('#fText').value.trim(); if (!text) return;
   const data = { text, answer: segVal('fAns') || 'O', note: $('#fNote').value.trim(), thinker: $('#fThinker').value,
-    unit: $('#fUnit').value, source: $('#fSource').value.trim() };
+    unit: $('#fUnit').value, source: $('#fSource').value.trim(), stances: readStances() };
   if (editingId) {
     const it = byId(editingId); if (it) { Object.assign(it, data); touch(it); }
     toast('수정했습니다');
@@ -669,15 +710,25 @@ $('#qAns').addEventListener('change', e => setF('ans', e.target.value));
 let quiz = null;
 const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
 
-function quizPool() { return pick(live(), { thinker: $('#zThinker').value, unit: $('#zUnit').value, range: segVal('zRange') }); }
-function renderQuizSetup() {
-  const n = quizPool().length;
-  $('#zAvail').textContent = `출제 가능한 선지 ${n}개`;
-  $('#zStart').disabled = !n;
+// 문항: { id } = 대표 O/X, { id, t } = 사상가 t의 입장 O/X
+function toQs(items, thinker) {
+  const qs = [];
+  items.forEach(i => {
+    if (!thinker || i.thinker === thinker) qs.push({ id: i.id });
+    (i.stances || []).forEach(s => { if (s.t !== i.thinker && (!thinker || s.t === thinker)) qs.push({ id: i.id, t: s.t }); });
+  });
+  return qs;
 }
-function startQuiz(items) {
-  if (!items.length) { toast('출제할 선지가 없습니다'); return; }
-  quiz = { ids: items.map(i => i.id), i: 0, res: [], picked: null };
+function qAnswer(q, it) { if (!q.t) return it.answer; const s = stanceOf(it, q.t); return s ? s.a : null; }
+function quizPool() { const t = $('#zThinker').value; return toQs(pick(live(), { thinker: t, unit: $('#zUnit').value, range: segVal('zRange') }), t); }
+function renderQuizSetup() {
+  const qs = quizPool(), n = new Set(qs.map(q => q.id)).size;
+  $('#zAvail').textContent = `출제 가능한 문항 ${qs.length}개 (선지 ${n}개)`;
+  $('#zStart').disabled = !qs.length;
+}
+function startQuiz(qs) {
+  if (!qs.length) { toast('출제할 선지가 없습니다'); return; }
+  quiz = { qs, i: 0, res: [], picked: null };
   showTab('quiz'); renderQuiz();
 }
 $('#zStart').onclick = () => {
@@ -691,49 +742,53 @@ function renderQuiz() {
   const setup = $('#quizSetup'), play = $('#quizPlay');
   if (!quiz) { setup.hidden = false; play.hidden = true; renderQuizSetup(); return; }
   setup.hidden = true; play.hidden = false;
-  const total = quiz.ids.length;
+  const total = quiz.qs.length;
   if (quiz.i >= total) {
     const ok = quiz.res.filter(r => r.ok).length;
-    const wrongs = quiz.res.filter(r => !r.ok).map(r => byId(r.id)).filter(Boolean);
+    const wrongQs = quiz.res.filter(r => !r.ok).map(r => r.q);
+    const wrongs = [...new Set(wrongQs.map(q => q.id))].map(byId).filter(Boolean);
     play.innerHTML = `<div class="card">
       <p class="label center">결과</p><div class="score">${ok}<small> / ${total}</small></div>
       <p class="hint center">정답률 ${Math.round(ok / total * 100)}%</p>
       ${wrongs.length ? `<p class="label" style="margin-top:18px">틀린 선지</p><ul class="list">${wrongs.map(i => itemHTML(i, 'wrong')).join('')}</ul>` : ''}
       <div class="row" style="margin-top:16px">
-        ${wrongs.length ? '<button class="btn primary" id="qRetry">틀린 선지 다시</button>' : ''}
+        ${wrongs.length ? '<button class="btn primary" id="qRetry">틀린 문항 다시</button>' : ''}
         <button class="btn" id="qEnd">처음으로</button></div></div>`;
-    const r = $('#qRetry'); if (r) r.onclick = () => startQuiz(shuffle(wrongs));
+    const r = $('#qRetry'); if (r) r.onclick = () => startQuiz(shuffle(wrongQs.slice()));
     $('#qEnd').onclick = () => { quiz = null; renderQuiz(); };
     $('#quizPlay .list') && $('#quizPlay .list').addEventListener('click', onItemAction);
     return;
   }
-  const it = byId(quiz.ids[quiz.i]);
-  if (!it) { quiz.ids.splice(quiz.i, 1); renderQuiz(); return; }
-  const p = quiz.picked, done = p != null, ok = done && p === it.answer;
+  const q = quiz.qs[quiz.i], it = byId(q.id), ans = it && qAnswer(q, it);
+  if (!ans) { quiz.qs.splice(quiz.i, 1); renderQuiz(); return; }
+  const p = quiz.picked, done = p != null, ok = done && p === ans;
+  const meta = [q.t ? '' : it.thinker, unitShort(it.unit), it.source].filter(Boolean).join(' · ');
   play.innerHTML = `
     <div class="progress"><span>${quiz.i + 1} / ${total}</span><div class="track"><div class="fill" style="width:${quiz.i / total * 100}%"></div></div>
       <button class="btn ghost" id="qQuit" style="min-height:30px;padding:0 6px;font-size:.8462rem">그만</button></div>
     <div class="card qcard">
+      ${q.t ? `<p class="qlabel">${esc(q.t)}의 입장에서</p>` : ''}
       <p class="qt">${esc(it.text)}</p>
-      <p class="m">${esc([it.thinker, unitShort(it.unit), it.source].filter(Boolean).join(' · '))}</p>
+      <p class="m">${esc(meta)}</p>
       <div class="oxbtns">
         <button data-v="O" class="${p === 'O' ? 'pick' : ''}" ${done ? 'disabled' : ''}>O</button>
         <button data-v="X" class="${p === 'X' ? 'pick' : ''}" ${done ? 'disabled' : ''}>X</button>
       </div>
-      ${done ? `<div class="fb"><p class="r ${ok ? 'ok' : 'no'}">${ok ? '정답' : '오답'} · 정답은 ${it.answer}</p>
+      ${done ? `<div class="fb"><p class="r ${ok ? 'ok' : 'no'}">${ok ? '정답' : '오답'} · ${q.t ? esc(q.t) + ' ' : ''}정답은 ${ans}</p>
+        ${stanceHTML(it)}
         ${it.note ? `<p class="n">→ ${esc(it.note)}</p>` : '<p class="n"></p>'}
         <button class="btn primary block" id="qNext">${quiz.i + 1 < total ? '다음' : '결과 보기'}</button></div>` : ''}
     </div>`;
   $$('#quizPlay .oxbtns button').forEach(b => b.onclick = () => {
     if (quiz.picked != null) return;
     quiz.picked = b.dataset.v;
-    const good = quiz.picked === it.answer;
-    quiz.res.push({ id: it.id, ok: good });
+    const good = quiz.picked === ans;
+    quiz.res.push({ q, ok: good });
     if (good) it.correct = (it.correct || 0) + 1; else it.wrong = (it.wrong || 0) + 1;
     touch(it); save(); renderQuiz();
   });
   const n = $('#qNext'); if (n) { n.onclick = () => { quiz.i++; quiz.picked = null; renderQuiz(); }; n.focus({ preventScroll: true }); }
-  $('#qQuit').onclick = () => { quiz.ids = quiz.ids.slice(0, quiz.i + (done ? 1 : 0)); quiz.i = quiz.ids.length; quiz.picked = null; if (!quiz.res.length) quiz = null; renderQuiz(); };
+  $('#qQuit').onclick = () => { quiz.qs = quiz.qs.slice(0, quiz.i + (done ? 1 : 0)); quiz.i = quiz.qs.length; quiz.picked = null; if (!quiz.res.length) quiz = null; renderQuiz(); };
 }
 
 /* ---------- 오답 ---------- */
@@ -748,30 +803,59 @@ function renderWrong() {
   $('#wQuiz').disabled = !rows.length;
 }
 bindSeg('wRange', renderWrong);
-$('#wQuiz').onclick = () => startQuiz(shuffle(wrongItems()));
+$('#wQuiz').onclick = () => startQuiz(shuffle(toQs(wrongItems())));
 
 /* ---------- 인쇄 ---------- */
+const chunk = (a, n) => { const r = []; for (let i = 0; i < a.length; i += n) r.push(a.slice(i, n + i)); return r; };
 function renderPrint() {
-  const thinker = $('#pThinker').value, unit = $('#pUnit').value, range = segVal('pRange'), test = segVal('pMode') === 'test';
-  const rows = pick(live(), { thinker, unit, range });
-  const order = thinkerList();
+  const thinker = $('#pThinker').value, unit = $('#pUnit').value, range = segVal('pRange');
+  const rows = pick(live(), { thinker, unit, range }).sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+  const order = thinkerList(), rank = t => order.indexOf(t) + 1 || 999;
   const groups = new Map();
-  rows.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0))
-    .forEach(i => { const k = i.thinker || '미분류'; if (!groups.has(k)) groups.set(k, []); groups.get(k).push(i); });
-  const keys = [...groups.keys()].sort((a, b) => (order.indexOf(a) + 1 || 999) - (order.indexOf(b) + 1 || 999));
+  rows.forEach(i => { const k = thinker || i.thinker || '미분류'; if (!groups.has(k)) groups.set(k, []); groups.get(k).push(i); });
+  const keys = [...groups.keys()].sort((a, b) => rank(a) - rank(b));
   const d = new Date(), date = `${d.getFullYear()}. ${d.getMonth() + 1}. ${d.getDate()}.`;
-  const desc = [thinker || '전체 사상가', unit || '전체 단원', { all: '전체', wrong: '오답', star: '별표' }[range], test ? '시험지' : '정리본'].join(' · ');
-  let n = 0; const key = [];
+  const desc = [thinker || '전체 사상가', unit || '전체 단원', { all: '전체', wrong: '오답', star: '별표' }[range]].join(' · ');
+  const txt = i => `<span class="tx">${esc(i.text)}</span>${i.note ? `<span class="nt">→ ${esc(i.note)}</span>` : ''}`;
+  let n = 0;
   const body = keys.map(k => `<h3>${esc(k)}</h3><table>
-    <thead><tr><th class="no">No</th><th>선지</th><th class="a">${test ? '답' : '정답'}</th>${test ? '' : '<th style="width:34%">해설</th>'}</tr></thead>
-    <tbody>${groups.get(k).map(i => { n++; key.push(`${n}-${i.answer}`); return `<tr><td class="no">${n}</td><td>${esc(i.text)}</td>
-      <td class="a ${test ? '' : i.answer}">${test ? '<span class="blank"></span>' : i.answer}</td>${test ? '' : `<td class="nt">${esc(i.note || '')}</td>`}</tr>`; }).join('')}</tbody></table>`).join('');
-  $('#sheet').innerHTML = `<h1>생활과 윤리 선지 ${test ? '확인 문제' : '정리'}</h1>
+    <thead><tr><th class="no">No</th><th>선지</th><th class="a">정답</th></tr></thead>
+    <tbody>${groups.get(k).map(i => {
+      const a = thinker && i.thinker !== thinker ? stanceOf(i, thinker).a : i.answer;
+      return `<tr><td class="no">${++n}</td><td>${txt(i)}</td><td class="a ${a}">${a}</td></tr>`; }).join('')}</tbody></table>`).join('');
+  // 사상가별 입장 비교표 (입장이 기록된 선지만, 사상가 6명씩 나눠서)
+  const sr = rows.filter(i => (i.stances || []).length);
+  const cols = [...new Set(sr.flatMap(i => i.stances.map(s => s.t)))].sort((a, b) => rank(a) - rank(b));
+  const cmp = sr.length ? `<h3>사상가별 입장 비교</h3>` + chunk(cols, 6).map(cs => {
+    const rs = sr.filter(i => cs.some(t => stanceOf(i, t)));
+    return `<table style="margin-bottom:8px"><thead><tr><th class="no">No</th><th>선지</th>${cs.map(t => `<th class="tc">${esc(t)}</th>`).join('')}</tr></thead>
+      <tbody>${rs.map((i, x) => `<tr><td class="no">${x + 1}</td><td><span class="tx">${esc(i.text)}</span></td>${cs.map(t => {
+        const s = stanceOf(i, t); return `<td class="a tc ${s ? s.a : ''}">${s ? s.a : ''}</td>`; }).join('')}</tr>`).join('')}</tbody></table>`;
+  }).join('') : '';
+  $('#sheet').innerHTML = `<h1>생활과 윤리 선지 정리</h1>
     <div class="sub"><span>${esc(desc)}</span><span>${n}문항 · ${date}</span></div>
-    ${body || '<p class="empty">인쇄할 선지가 없습니다</p>'}
-    ${test && n ? `<div class="key"><b style="font-weight:400">정답</b>&nbsp;&nbsp;${key.map(k => `<span>${k}</span>`).join('')}</div>` : ''}`;
+    ${body || '<p class="empty">인쇄할 선지가 없습니다</p>'}${cmp}`;
+  fitLines(); scaleSheet();
 }
-bindSeg('pRange', renderPrint); bindSeg('pMode', renderPrint);
+// 선지는 되도록 한 줄(최소 9pt까지 축소), 안 되면 두 줄 이내(최소 8pt). 줄바꿈은 띄어쓰기에서만.
+function fitLines() {
+  $$('#sheet .tx').forEach(el => {
+    const lines = fs => { el.style.fontSize = fs + 'pt'; return Math.round(el.offsetHeight / (fs * 4 / 3 * 1.5)); };
+    if (!el.offsetHeight) return;
+    for (let fs = 10; fs >= 9; fs -= .25) if (lines(fs) <= 1) return;
+    for (let fs = 10; fs >= 8; fs -= .25) if (lines(fs) <= 2) return;
+  });
+}
+// 화면 미리보기: A4 폭 시트를 화면에 맞게 축소
+function scaleSheet() {
+  const sh = $('#sheet'), box = $('#sheetbox');
+  sh.style.transform = ''; box.style.height = '';
+  if (!sh.offsetWidth) return;
+  const s = Math.min(1, box.clientWidth / sh.offsetWidth);
+  if (s < 1) { sh.style.transform = `scale(${s})`; box.style.height = sh.offsetHeight * s + 'px'; }
+}
+window.addEventListener('resize', () => { if (ui.tab === 'print') scaleSheet(); });
+bindSeg('pRange', renderPrint);
 $('#pThinker').onchange = renderPrint; $('#pUnit').onchange = renderPrint;
 $('#pPrint').onclick = () => { renderPrint(); window.print(); };
 window.addEventListener('beforeprint', renderPrint);
@@ -784,7 +868,7 @@ function showTab(t) {
   renderAll();
   window.scrollTo(0, 0);
 }
-$$('nav button').forEach(b => b.onclick = () => { if (b.dataset.tab === 'quiz' && ui.tab === 'quiz' && quiz && quiz.i >= quiz.ids.length) quiz = null; showTab(b.dataset.tab); });
+$$('nav button').forEach(b => b.onclick = () => { if (b.dataset.tab === 'quiz' && ui.tab === 'quiz' && quiz && quiz.i >= quiz.qs.length) quiz = null; showTab(b.dataset.tab); });
 
 function renderAll() {
   const t = ui.tab;
@@ -1077,7 +1161,7 @@ const m = location.hash.match(/^#q=(.+)$/);
 if (m) {
   history.replaceState(null, '', location.pathname + location.search);
   const it = byId(decodeURIComponent(m[1]));
-  if (it) startQuiz([it]); else showTab(ui.tab);
+  if (it) startQuiz(toQs([it])); else showTab(ui.tab);
 } else showTab(ui.tab);
 doSync();
 
