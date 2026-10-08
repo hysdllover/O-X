@@ -112,7 +112,6 @@ select{-webkit-appearance:none;appearance:none;padding-right:28px;
 .st{display:flex;flex-wrap:wrap;gap:4px;margin:6px 0 0}
 .sc{font-size:0.7692rem;padding:1px 8px;border-radius:10px;background:var(--olive-bg);color:var(--olive);letter-spacing:.04em}
 .sc.X{background:var(--rose-bg);color:var(--rose)}
-.sc.main{box-shadow:inset 0 0 0 .5px currentColor;font-weight:400}
 .srow{display:flex;gap:6px;align-items:center}
 .srow select{flex:1;min-width:0}
 .srow .x{width:30px;height:38px;color:var(--soft);flex:none}
@@ -201,14 +200,8 @@ select{-webkit-appearance:none;appearance:none;padding-right:28px;
 .sheet .a{width:30px;text-align:center;font:400 10pt var(--serif)}
 .sheet .a.O{color:var(--c-olive)} .sheet .a.X{color:var(--c-rose)}
 .sheet th.tc{width:46px;text-align:center;font-size:6.5pt;letter-spacing:0;word-break:break-all;line-height:1.3;padding:3px 2px;vertical-align:bottom}
-.sheet th.a{white-space:nowrap;letter-spacing:0;text-align:center;padding:3px 0}
+.sheet th.a{font:500 7pt var(--sans);letter-spacing:0;text-align:center;padding:3px 2px;color:var(--c-navy);width:46px;word-break:break-all;line-height:1.3;vertical-align:bottom}
 .sheet td.a.tc{width:46px}
-.sheet .og{width:66px;font-size:8pt;white-space:nowrap;word-break:keep-all}
-.sheet td.og{color:#555;padding-top:5px}
-.sheet .og b{font:400 9.5pt var(--serif);margin-left:3px}
-.sheet .og b.O{color:var(--c-olive)} .sheet .og b.X{color:var(--c-rose)}
-.sheet .mk{display:inline-grid;place-items:center;width:17px;height:17px;border:.75px solid currentColor;border-radius:50%;line-height:1}
-.sheet .legend{font-size:7pt;color:#8a8f99;margin:2px 0 6px}
 .sheet .empty{color:#aaa}
 
 /* settings overlay */
@@ -591,8 +584,8 @@ function allStances(i) {
   return i.thinker ? [{ t: i.thinker, a: i.answer, main: true }, ...s] : s;
 }
 function stanceHTML(it) {
-  if (!(it.stances || []).length) return '';
-  return `<p class="st">${allStances(it).map(x => `<span class="sc ${x.a}${x.main ? ' main' : ''}">${esc(x.t)} ${x.a}</span>`).join('')}</p>`;
+  if (!allStances(it).some(x => !x.main)) return '';
+  return `<p class="st">${allStances(it).filter(x => !x.main).map(x => `<span class="sc ${x.a}">${esc(x.t)} ${x.a}</span>`).join('')}</p>`;
 }
 function itemHTML(it, mode) {
   const meta = [it.thinker, unitShort(it.unit), it.source].filter(Boolean).map(esc).join(' · ');
@@ -818,7 +811,6 @@ bindSeg('wRange', renderWrong);
 $('#wQuiz').onclick = () => startQuiz(shuffle(toQs(wrongItems())));
 
 /* ---------- 인쇄 ---------- */
-const chunk = (a, n) => { const r = []; for (let i = 0; i < a.length; i += n) r.push(a.slice(i, n + i)); return r; };
 function renderPrint() {
   const thinker = $('#pThinker').value, unit = $('#pUnit').value, range = segVal('pRange');
   const rows = pick(live(), { thinker, unit, range }).sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
@@ -829,27 +821,22 @@ function renderPrint() {
   const d = new Date(), date = `${d.getFullYear()}. ${d.getMonth() + 1}. ${d.getDate()}.`;
   const desc = [thinker || '전체 사상가', unit || '전체 단원', { all: '전체', wrong: '오답', star: '별표' }[range]].join(' · ');
   const txt = i => `<span class="tx">${esc(i.text)}</span>${i.note ? `<span class="nt">→ ${esc(i.note)}</span>` : ''}`;
+  // 표 하나에 정답(그룹 사상가) + 다른 사상가 정오를 나란히. 선지는 한 번만 표시
   let n = 0;
-  const body = keys.map(k => `<h3>${esc(k)}</h3><table>
-    <thead><tr><th class="no">No</th><th>선지</th><th class="a">정답</th></tr></thead>
-    <tbody>${groups.get(k).map(i => {
-      const a = thinker && i.thinker !== thinker ? stanceOf(i, thinker).a : i.answer;
-      return `<tr><td class="no">${++n}</td><td>${txt(i)}</td><td class="a ${a}">${a}</td></tr>`; }).join('')}</tbody></table>`).join('');
-  // 사상가별 입장 비교표 (입장이 기록된 선지만, 사상가 6명씩 나눠서)
-  // 원 사상가(대표 사상가)도 같은 열에 넣어 정오를 나란히 비교
-  const sr = rows.filter(i => (i.stances || []).length);
-  const cols = [...new Set(sr.flatMap(i => allStances(i).map(s => s.t)))].sort((a, b) => rank(a) - rank(b));
-  const cmp = sr.length ? `<h3>사상가별 입장 비교</h3><p class="legend">원 사상가 = 선지의 출처 사상가 · ◯ 표시 칸이 원 사상가의 정오</p>` + chunk(cols, 6).map(cs => {
-    const rs = sr.filter(i => cs.some(t => allStances(i).some(s => s.t === t)));
-    return `<table style="margin-bottom:8px"><thead><tr><th class="no">No</th><th>선지</th><th class="og">원 사상가</th>${cs.map(t => `<th class="tc">${esc(t)}</th>`).join('')}</tr></thead>
-      <tbody>${rs.map((i, x) => `<tr><td class="no">${x + 1}</td><td><span class="tx">${esc(i.text)}</span></td>
-        <td class="og">${i.thinker ? `${esc(i.thinker)}<b class="${i.answer}">${i.answer}</b>` : '—'}</td>${cs.map(t => {
-        const s = allStances(i).find(v => v.t === t);
-        return `<td class="a tc ${s ? s.a : ''}">${s ? (s.main ? `<span class="mk">${s.a}</span>` : s.a) : ''}</td>`; }).join('')}</tr>`).join('')}</tbody></table>`;
-  }).join('') : '';
+  const body = keys.map(k => {
+    const list = groups.get(k);
+    const ansOf = i => k === '미분류' ? i.answer : (allStances(i).find(s => s.t === k) || {}).a;
+    const cols = [...new Set(list.flatMap(i => allStances(i).map(s => s.t)))].filter(t => t !== k).sort((a, b) => rank(a) - rank(b));
+    return `<h3>${esc(k)}</h3><table>
+    <thead><tr><th class="no">No</th><th>선지</th><th class="a">${k === '미분류' ? '정답' : esc(k)}</th>${cols.map(t => `<th class="tc">${esc(t)}</th>`).join('')}</tr></thead>
+    <tbody>${list.map(i => {
+      const a = ansOf(i) || '';
+      return `<tr><td class="no">${++n}</td><td>${txt(i)}</td><td class="a ${a}">${a}</td>${cols.map(t => {
+        const s = allStances(i).find(v => v.t === t); return `<td class="a tc ${s ? s.a : ''}">${s ? s.a : ''}</td>`; }).join('')}</tr>`; }).join('')}</tbody></table>`;
+  }).join('');
   $('#sheet').innerHTML = `<h1>생활과 윤리 선지 정리</h1>
     <div class="sub"><span>${esc(desc)}</span><span>${n}문항 · ${date}</span></div>
-    ${body || '<p class="empty">인쇄할 선지가 없습니다</p>'}${cmp}`;
+    ${body || '<p class="empty">인쇄할 선지가 없습니다</p>'}`;
   fitLines(); scaleSheet();
 }
 // 선지는 되도록 한 줄(최소 9pt까지 축소), 안 되면 두 줄 이내(최소 8pt). 줄바꿈은 띄어쓰기에서만.
