@@ -112,6 +112,7 @@ select{-webkit-appearance:none;appearance:none;padding-right:28px;
 .st{display:flex;flex-wrap:wrap;gap:4px;margin:6px 0 0}
 .sc{font-size:0.7692rem;padding:1px 8px;border-radius:10px;background:var(--olive-bg);color:var(--olive);letter-spacing:.04em}
 .sc.X{background:var(--rose-bg);color:var(--rose)}
+.sc.main{box-shadow:inset 0 0 0 .5px currentColor;font-weight:400}
 .srow{display:flex;gap:6px;align-items:center}
 .srow select{flex:1;min-width:0}
 .srow .x{width:30px;height:38px;color:var(--soft);flex:none}
@@ -202,6 +203,12 @@ select{-webkit-appearance:none;appearance:none;padding-right:28px;
 .sheet th.tc{width:46px;text-align:center;font-size:6.5pt;letter-spacing:0;word-break:break-all;line-height:1.3;padding:3px 2px;vertical-align:bottom}
 .sheet th.a{white-space:nowrap;letter-spacing:0;text-align:center;padding:3px 0}
 .sheet td.a.tc{width:46px}
+.sheet .og{width:66px;font-size:8pt;white-space:nowrap;word-break:keep-all}
+.sheet td.og{color:#555;padding-top:5px}
+.sheet .og b{font:400 9.5pt var(--serif);margin-left:3px}
+.sheet .og b.O{color:var(--c-olive)} .sheet .og b.X{color:var(--c-rose)}
+.sheet .mk{display:inline-grid;place-items:center;width:17px;height:17px;border:.75px solid currentColor;border-radius:50%;line-height:1}
+.sheet .legend{font-size:7pt;color:#8a8f99;margin:2px 0 6px}
 .sheet .empty{color:#aaa}
 
 /* settings overlay */
@@ -578,9 +585,14 @@ function pick(items, { thinker = '', unit = '', range = 'all' } = {}) {
 }
 
 /* ---------- item row ---------- */
+// 대표 사상가(원 사상가) 입장 + 추가 입장. 같은 사상가는 대표 O/X 우선
+function allStances(i) {
+  const s = (i.stances || []).filter(x => x.t !== i.thinker);
+  return i.thinker ? [{ t: i.thinker, a: i.answer, main: true }, ...s] : s;
+}
 function stanceHTML(it) {
-  const s = it.stances || [];
-  return s.length ? `<p class="st">${s.map(x => `<span class="sc ${x.a}">${esc(x.t)} ${x.a}</span>`).join('')}</p>` : '';
+  if (!(it.stances || []).length) return '';
+  return `<p class="st">${allStances(it).map(x => `<span class="sc ${x.a}${x.main ? ' main' : ''}">${esc(x.t)} ${x.a}</span>`).join('')}</p>`;
 }
 function itemHTML(it, mode) {
   const meta = [it.thinker, unitShort(it.unit), it.source].filter(Boolean).map(esc).join(' · ');
@@ -824,13 +836,16 @@ function renderPrint() {
       const a = thinker && i.thinker !== thinker ? stanceOf(i, thinker).a : i.answer;
       return `<tr><td class="no">${++n}</td><td>${txt(i)}</td><td class="a ${a}">${a}</td></tr>`; }).join('')}</tbody></table>`).join('');
   // 사상가별 입장 비교표 (입장이 기록된 선지만, 사상가 6명씩 나눠서)
+  // 원 사상가(대표 사상가)도 같은 열에 넣어 정오를 나란히 비교
   const sr = rows.filter(i => (i.stances || []).length);
-  const cols = [...new Set(sr.flatMap(i => i.stances.map(s => s.t)))].sort((a, b) => rank(a) - rank(b));
-  const cmp = sr.length ? `<h3>사상가별 입장 비교</h3>` + chunk(cols, 6).map(cs => {
-    const rs = sr.filter(i => cs.some(t => stanceOf(i, t)));
-    return `<table style="margin-bottom:8px"><thead><tr><th class="no">No</th><th>선지</th>${cs.map(t => `<th class="tc">${esc(t)}</th>`).join('')}</tr></thead>
-      <tbody>${rs.map((i, x) => `<tr><td class="no">${x + 1}</td><td><span class="tx">${esc(i.text)}</span></td>${cs.map(t => {
-        const s = stanceOf(i, t); return `<td class="a tc ${s ? s.a : ''}">${s ? s.a : ''}</td>`; }).join('')}</tr>`).join('')}</tbody></table>`;
+  const cols = [...new Set(sr.flatMap(i => allStances(i).map(s => s.t)))].sort((a, b) => rank(a) - rank(b));
+  const cmp = sr.length ? `<h3>사상가별 입장 비교</h3><p class="legend">원 사상가 = 선지의 출처 사상가 · ◯ 표시 칸이 원 사상가의 정오</p>` + chunk(cols, 6).map(cs => {
+    const rs = sr.filter(i => cs.some(t => allStances(i).some(s => s.t === t)));
+    return `<table style="margin-bottom:8px"><thead><tr><th class="no">No</th><th>선지</th><th class="og">원 사상가</th>${cs.map(t => `<th class="tc">${esc(t)}</th>`).join('')}</tr></thead>
+      <tbody>${rs.map((i, x) => `<tr><td class="no">${x + 1}</td><td><span class="tx">${esc(i.text)}</span></td>
+        <td class="og">${i.thinker ? `${esc(i.thinker)}<b class="${i.answer}">${i.answer}</b>` : '—'}</td>${cs.map(t => {
+        const s = allStances(i).find(v => v.t === t);
+        return `<td class="a tc ${s ? s.a : ''}">${s ? (s.main ? `<span class="mk">${s.a}</span>` : s.a) : ''}</td>`; }).join('')}</tr>`).join('')}</tbody></table>`;
   }).join('') : '';
   $('#sheet').innerHTML = `<h1>생활과 윤리 선지 정리</h1>
     <div class="sub"><span>${esc(desc)}</span><span>${n}문항 · ${date}</span></div>
