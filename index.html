@@ -185,23 +185,25 @@ select{-webkit-appearance:none;appearance:none;padding-right:28px;
 .popts .row+.row{margin-top:8px}
 .sheetwrap{background:var(--line);border-radius:var(--r);padding:12px;overflow:hidden}
 .sheetbox{position:relative}
-.sheet{background:#fff;color:#2b2f38;width:210mm;margin:0 auto;padding:14mm 12mm;font:var(--fw) 10pt/1.5 var(--sans);transform-origin:top left}
-.sheet h1{font:var(--fw) 15pt var(--serif);letter-spacing:.08em;margin:0}
-.sheet .sub{display:flex;flex-wrap:wrap;gap:2px 12px;justify-content:space-between;font-size:7.5pt;color:#8a8f99;letter-spacing:.1em;
-  margin:5px 0 12px;padding-bottom:6px;border-bottom:.5px solid #c9ccd3}
-.sheet h3{font:400 10pt var(--serif);color:var(--c-navy);letter-spacing:.08em;margin:14px 0 4px;break-after:avoid}
+.sheet{background:#fff;color:#2b2f38;width:210mm;margin:0 auto;padding:14mm 12mm;font:var(--fw) 10pt/1.5 var(--sans);letter-spacing:.02em;transform-origin:top left}
+/* 정리본 타이포 규칙: 글꼴 하나(본문 폰트), 크기 3단계(제목 14pt · 본문 10pt · 보조 8pt), 행간 1.5, 칸 여백 4px 6px */
+.sheet *{font-family:inherit;letter-spacing:inherit;line-height:1.5}
+.sheet h1{font-size:14pt;font-weight:400;margin:0}
+.sheet .sub{display:flex;flex-wrap:wrap;gap:0 12px;justify-content:space-between;font-size:8pt;color:#8a8f99;
+  margin:4px 0 12px;padding-bottom:6px;border-bottom:.5px solid #c9ccd3}
+.sheet h3{font-size:10pt;font-weight:400;color:var(--c-navy);margin:14px 0 4px;break-after:avoid}
 .sheet table{width:100%;border-collapse:collapse;table-layout:fixed}
-.sheet th{font-weight:400;font-size:7pt;color:#8a8f99;letter-spacing:.1em;text-align:left;padding:3px 5px;border-bottom:.5px solid #c9ccd3}
-.sheet td{padding:4px 5px;border-bottom:.5px solid #e4e5e9;vertical-align:top}
+.sheet th,.sheet td{padding:4px 6px;vertical-align:baseline}
+.sheet th{font-size:8pt;font-weight:400;color:#8a8f99;text-align:left;border-bottom:.5px solid #c9ccd3;vertical-align:bottom}
+.sheet td{border-bottom:.5px solid #e4e5e9}
 .sheet tr{break-inside:avoid}
-.sheet .no{width:24px;color:#a0a5ae;font-size:7.5pt;padding-top:5px}
-.sheet .tx{display:block;word-break:keep-all;overflow-wrap:normal;line-height:1.5}
-.sheet .nt{display:block;color:var(--c-navy);font-size:8pt;word-break:keep-all;margin-top:1px}
-.sheet .a{width:30px;text-align:center;font:400 10pt var(--serif)}
-.sheet .a.O{color:var(--c-olive)} .sheet .a.X{color:var(--c-rose)}
-.sheet th.tc{width:46px;text-align:center;font-size:6.5pt;letter-spacing:0;word-break:break-all;line-height:1.3;padding:3px 2px;vertical-align:bottom}
-.sheet th.a{font:400 6.5pt var(--sans);letter-spacing:0;text-align:center;padding:3px 2px;color:var(--c-navy);width:46px;word-break:break-all;line-height:1.3;vertical-align:bottom}
-.sheet td.a.tc{width:46px}
+.sheet .no{width:28px;font-size:8pt;color:#a0a5ae}
+.sheet .tx{display:block;word-break:keep-all;overflow-wrap:normal}
+.sheet .nt{display:block;font-size:8pt;color:var(--c-navy);word-break:keep-all}
+.sheet .a{width:48px;padding-left:2px;padding-right:2px;text-align:center;font-size:10pt;font-weight:400}
+.sheet th.a{font-size:8pt;word-break:break-all}
+.sheet th.a:not(.tc){color:var(--c-navy)}
+.sheet td.a.O{color:var(--c-olive)} .sheet td.a.X{color:var(--c-rose)}
 .sheet .empty{color:#aaa}
 
 /* settings overlay */
@@ -829,7 +831,7 @@ function renderPrint() {
     const ansOf = i => k === '미분류' ? i.answer : (allStances(i).find(s => s.t === k) || {}).a;
     const cols = [...new Set(list.flatMap(i => allStances(i).map(s => s.t)))].filter(t => t !== k).sort((a, b) => rank(a) - rank(b));
     return `<h3>${esc(k)}</h3><table>
-    <thead><tr><th class="no">No</th><th>선지</th><th class="a">${k === '미분류' ? '정답' : esc(k)}</th>${cols.map(t => `<th class="tc">${esc(t)}</th>`).join('')}</tr></thead>
+    <thead><tr><th class="no">No</th><th>선지</th><th class="a">${k === '미분류' ? '정답' : esc(k)}</th>${cols.map(t => `<th class="a tc">${esc(t)}</th>`).join('')}</tr></thead>
     <tbody>${list.map(i => {
       const a = ansOf(i) || '';
       return `<tr><td class="no">${++n}</td><td>${txt(i)}</td><td class="a ${a}">${a}</td>${cols.map(t => {
@@ -976,7 +978,7 @@ $('#uReset').onclick = () => {
 
 $('#openSet').onclick = () => {
   $('#sToken').value = sync.token || ''; $('#sGist').value = sync.gistId || '';
-  renderChips(); renderUnits(); renderTheme(); syncMsg(); $('#settings').hidden = false; doSync();
+  renderChips(); renderUnits(); renderTheme(); syncMsg(); $('#settings').hidden = false;
 };
 $('#closeSet').onclick = () => { $('#settings').hidden = true; };
 $('#settings').addEventListener('click', e => { if (e.target.id === 'settings') $('#settings').hidden = true; });
@@ -1007,7 +1009,7 @@ const theme = () => OXTheme.norm(db.theme);
 function setTheme(patch) {
   const t = Object.assign(theme(), patch);
   if (patch.colors && !patch.preset) t.preset = 'custom';
-  db.theme = OXTheme.apply(t); db.themeAt = now(); save(); scheduleSync(1000); renderTheme();
+  db.theme = OXTheme.apply(t); db.themeAt = now(); save(); renderTheme();
 }
 function renderTheme() {
   const t = theme(), P = OXTheme.presets, F = OXTheme.fonts;
@@ -1042,7 +1044,7 @@ for (const [id, key] of [['thSize', 'size'], ['thRadius', 'radius']]) {
 $('#thReset').onclick = () => setTheme(OXTheme.norm({}));
 
 /* ---------- Gist 동기화 ---------- */
-let syncTimer = null, syncing = false, dirty = false, lastErr = '';
+let syncing = false, dirty = false, lastErr = '';
 function setDot(s) { $('#syncDot').dataset.s = s; }
 function syncMsg(msg, err) {
   const el = $('#sStatus');
@@ -1052,13 +1054,12 @@ function syncMsg(msg, err) {
   el.innerHTML = lastErr ? esc(lastErr) : `연결됨 · Gist <code>${esc(sync.gistId.slice(0, 8))}</code>` +
     (sync.count != null ? ` · 선지 ${sync.count}개` : '') +
     (sync.last ? ` · ${new Date(sync.last).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })} 동기화` : '') +
-    '<br>기기마다 Gist 앞 8자리가 같으면 정상입니다.';
+    '<br>앱을 열 때·닫을 때만 동기화합니다 (필요하면 지금 동기화). 기기마다 Gist 앞 8자리가 같으면 정상입니다.';
 }
-function scheduleSync(ms = 3000) {
+// 수정 시에는 표시만 하고, 실제 동기화는 앱을 열 때·닫을 때만 (API 호출 최소화)
+function scheduleSync() {
   dirty = true;
-  if (!sync.token || !sync.gistId) return;
-  setDot('pending');
-  clearTimeout(syncTimer); syncTimer = setTimeout(doSync, ms);
+  if (sync.token && sync.gistId) setDot('pending');
 }
 async function gh(path, opt = {}) {
   const r = await fetch('https://api.github.com' + path, Object.assign({ cache: 'no-store' }, opt, {
@@ -1122,7 +1123,7 @@ const sig = x => (x.items || []).map(i => i.id + ':' + (i.updatedAt || 0)).sort(
 async function doSync() {
   if (!sync.token || !sync.gistId) return;
   if (syncing) { dirty = true; return; }
-  syncing = true; dirty = false; clearTimeout(syncTimer);
+  syncing = true; dirty = false;
   setDot('busy'); syncMsg('동기화 중…');
   try {
     if (!unified) await unify();
@@ -1142,7 +1143,7 @@ async function doSync() {
     lastErr = e.message || '네트워크 오류'; setDot('err'); syncMsg();
   } finally {
     syncing = false;
-    if (dirty) scheduleSync();
+    if (dirty && sync.token && sync.gistId) setDot('pending');
   }
 }
 
@@ -1174,12 +1175,12 @@ $('#sOff').onclick = () => {
   sync = {}; store.set(SKEY, sync); lastErr = ''; setDot(''); $('#sToken').value = ''; $('#sGist').value = ''; syncMsg();
 };
 
-// 다른 기기 변경사항 받기: 복귀·포커스 시 + 화면이 보이는 동안 45초마다
-const pull = () => { if (document.visibilityState === 'visible') doSync(); };
-document.addEventListener('visibilitychange', pull);
-window.addEventListener('pageshow', pull);
-window.addEventListener('focus', pull);
-setInterval(pull, 45000);
+// 동기화 시점: 앱을 열 때(복귀 포함) 받기·합치기, 닫을 때(백그라운드) 변경분이 있으면 올리기
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' || dirty) doSync();
+});
+window.addEventListener('pageshow', e => { if (e.persisted) doSync(); });
+window.addEventListener('pagehide', () => { if (dirty) doSync(); });
 
 /* ---------- init ---------- */
 fillSelects();
