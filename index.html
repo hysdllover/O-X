@@ -437,7 +437,7 @@ code{font-size:0.8462rem;background:var(--bg);padding:1px 5px;border-radius:4px;
     <div class="ph"><h2 style="margin:0">설정</h2><button class="btn ghost" id="closeSet">닫기</button></div>
     <section class="stack">
       <h3>기기 간 동기화 · GitHub Gist</h3>
-      <p class="hint">GitHub → Settings → Developer settings → Personal access tokens에서 <b>gist</b> 권한만 있는 토큰을 만들어 입력하세요. Gist ID를 비우면 비공개 Gist가 새로 만들어집니다. 다른 기기에는 같은 토큰과 Gist ID를 입력하세요.</p>
+      <p class="hint">토큰 만들기: GitHub → Settings → Developer settings → Personal access tokens<br>· <b>Tokens (classic)</b>: <b>gist</b> 체크<br>· <b>Fine-grained</b>: Account permissions → <b>Gists → Read and write</b><br>Gist ID를 비우면 기존 선지노트 Gist를 찾아 연결하고, 없으면 새로 만듭니다.</p>
       <input id="sToken" type="password" placeholder="GitHub 토큰" autocomplete="off">
       <input id="sGist" placeholder="Gist ID (비우면 새로 생성)" autocomplete="off">
       <div class="row">
@@ -511,6 +511,7 @@ const store = {
 let db = store.get(KEY, null);
 if (!db || !Array.isArray(db.items)) db = { items: [], thinkers: DEFAULT_THINKERS.slice(), thinkersAt: 0 };
 if (!Array.isArray(db.units)) { db.units = UNITS.slice(); db.unitsAt = db.unitsAt || 0; }
+if (!Array.isArray(db.thinkers)) { db.thinkers = DEFAULT_THINKERS.slice(); db.thinkersAt = 0; }
 let sync = store.get(SKEY, {}) || {};
 const ui = Object.assign({ tab: 'note', filt: { q: '', thinker: '', unit: '', ans: '' } }, store.get(UKEY, {}));
 
@@ -1066,7 +1067,22 @@ async function gh(path, opt = {}) {
     headers: Object.assign({ Accept: 'application/vnd.github+json', Authorization: 'Bearer ' + sync.token },
       opt.body ? { 'Content-Type': 'application/json' } : {})
   }));
-  if (!r.ok) throw new Error({ 401: '토큰이 올바르지 않습니다', 403: '권한이 없습니다 (gist 권한 확인)', 404: 'Gist를 찾을 수 없습니다' }[r.status] || '동기화 실패 (' + r.status + ')');
+  if (!r.ok) {
+    // GitHub이 알려 주는 실제 원인을 함께 표시
+    let msg = ''; try { msg = (await r.json()).message || ''; } catch (e) {}
+    const reset = +r.headers.get('x-ratelimit-reset'), left = r.headers.get('x-ratelimit-remaining');
+    let ko;
+    if ((r.status === 403 || r.status === 429) && (left === '0' || /rate limit/i.test(msg)))
+      ko = '요청 한도 초과' + (reset ? ` · ${new Date(reset * 1000).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })} 이후 다시 시도` : ' · 잠시 후 다시 시도');
+    else if (r.status === 401) ko = '토큰이 올바르지 않거나 만료되었습니다';
+    else if (r.status === 403) ko = /not accessible/i.test(msg)
+      ? '토큰에 Gist 쓰기 권한이 없습니다 (fine-grained 토큰: Account permissions → Gists → Read and write)'
+      : '권한이 없습니다 (토큰의 gist 권한 확인)';
+    else if (r.status === 404) ko = 'Gist를 찾을 수 없습니다 (Gist ID 또는 토큰 계정 확인)';
+    else ko = '동기화 실패';
+    const err = new Error(`${ko}${msg ? ` — ${msg}` : ''} [${r.status}]`); err.status = r.status;
+    throw err;
+  }
   return r.json();
 }
 function payload() { return JSON.stringify({ v: 1, app: 'ox', items: db.items, thinkers: db.thinkers, thinkersAt: db.thinkersAt || 0, units: db.units, unitsAt: db.unitsAt || 0, theme: db.theme, themeAt: db.themeAt || 0 }); }
@@ -1089,16 +1105,20 @@ async function listOxGists() {
 let unified = false;
 async function unify() {
   unified = true;
-  const list = await listOxGists();
+  let list;
+  try { list = await listOxGists(); } catch (e) { return; }   // 목록 조회 실패 시 현재 Gist로 계속
+
   const mainId = list.length ? list[0].id : sync.gistId;
   const others = list.slice(1).map(g => g.id);
   if (sync.gistId && sync.gistId !== mainId && !others.includes(sync.gistId)) others.push(sync.gistId);
   for (const id of others) {
-    const r = await readGist(id);
-    db = merge(db, r.data);
-    if (!r.desc.startsWith(MERGED)) {
-      await gh('/gists/' + encodeURIComponent(id), { method: 'PATCH', body: JSON.stringify({ description: MERGED + (r.desc || '생윤 선지노트') }) });
-    }
+    try {
+      const r = await readGist(id);
+      db = merge(db, r.data);
+      if (!r.desc.startsWith(MERGED)) {
+        await gh('/gists/' + encodeURIComponent(id), { method: 'PATCH', body: JSON.stringify({ description: MERGED + (r.desc || '생윤 선지노트') }) });
+      }
+    } catch (e) {}   // 병합 표시 실패는 동기화를 막지 않음
   }
   if (mainId !== sync.gistId) { sync.gistId = mainId; store.set(SKEY, sync); $('#sGist').value = mainId; }
   if (others.length) { save(true); OXTheme.apply(db.theme); fillSelects(); renderAll(); }
