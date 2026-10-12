@@ -976,7 +976,7 @@ $('#uReset').onclick = () => {
 
 $('#openSet').onclick = () => {
   $('#sToken').value = sync.token || ''; $('#sGist').value = sync.gistId || '';
-  renderChips(); renderUnits(); renderTheme(); syncMsg(); $('#settings').hidden = false; doSync();
+  renderChips(); renderUnits(); renderTheme(); syncMsg(); $('#settings').hidden = false;
 };
 $('#closeSet').onclick = () => { $('#settings').hidden = true; };
 $('#settings').addEventListener('click', e => { if (e.target.id === 'settings') $('#settings').hidden = true; });
@@ -1007,7 +1007,7 @@ const theme = () => OXTheme.norm(db.theme);
 function setTheme(patch) {
   const t = Object.assign(theme(), patch);
   if (patch.colors && !patch.preset) t.preset = 'custom';
-  db.theme = OXTheme.apply(t); db.themeAt = now(); save(); scheduleSync(1000); renderTheme();
+  db.theme = OXTheme.apply(t); db.themeAt = now(); save(); renderTheme();
 }
 function renderTheme() {
   const t = theme(), P = OXTheme.presets, F = OXTheme.fonts;
@@ -1042,7 +1042,7 @@ for (const [id, key] of [['thSize', 'size'], ['thRadius', 'radius']]) {
 $('#thReset').onclick = () => setTheme(OXTheme.norm({}));
 
 /* ---------- Gist 동기화 ---------- */
-let syncTimer = null, syncing = false, dirty = false, lastErr = '';
+let syncing = false, dirty = false, lastErr = '';
 function setDot(s) { $('#syncDot').dataset.s = s; }
 function syncMsg(msg, err) {
   const el = $('#sStatus');
@@ -1052,13 +1052,12 @@ function syncMsg(msg, err) {
   el.innerHTML = lastErr ? esc(lastErr) : `연결됨 · Gist <code>${esc(sync.gistId.slice(0, 8))}</code>` +
     (sync.count != null ? ` · 선지 ${sync.count}개` : '') +
     (sync.last ? ` · ${new Date(sync.last).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })} 동기화` : '') +
-    '<br>기기마다 Gist 앞 8자리가 같으면 정상입니다.';
+    '<br>앱을 열 때·닫을 때만 동기화합니다 (필요하면 지금 동기화). 기기마다 Gist 앞 8자리가 같으면 정상입니다.';
 }
-function scheduleSync(ms = 3000) {
+// 수정 시에는 표시만 하고, 실제 동기화는 앱을 열 때·닫을 때만 (API 호출 최소화)
+function scheduleSync() {
   dirty = true;
-  if (!sync.token || !sync.gistId) return;
-  setDot('pending');
-  clearTimeout(syncTimer); syncTimer = setTimeout(doSync, ms);
+  if (sync.token && sync.gistId) setDot('pending');
 }
 async function gh(path, opt = {}) {
   const r = await fetch('https://api.github.com' + path, Object.assign({ cache: 'no-store' }, opt, {
@@ -1122,7 +1121,7 @@ const sig = x => (x.items || []).map(i => i.id + ':' + (i.updatedAt || 0)).sort(
 async function doSync() {
   if (!sync.token || !sync.gistId) return;
   if (syncing) { dirty = true; return; }
-  syncing = true; dirty = false; clearTimeout(syncTimer);
+  syncing = true; dirty = false;
   setDot('busy'); syncMsg('동기화 중…');
   try {
     if (!unified) await unify();
@@ -1142,7 +1141,7 @@ async function doSync() {
     lastErr = e.message || '네트워크 오류'; setDot('err'); syncMsg();
   } finally {
     syncing = false;
-    if (dirty) scheduleSync();
+    if (dirty && sync.token && sync.gistId) setDot('pending');
   }
 }
 
@@ -1174,12 +1173,12 @@ $('#sOff').onclick = () => {
   sync = {}; store.set(SKEY, sync); lastErr = ''; setDot(''); $('#sToken').value = ''; $('#sGist').value = ''; syncMsg();
 };
 
-// 다른 기기 변경사항 받기: 복귀·포커스 시 + 화면이 보이는 동안 45초마다
-const pull = () => { if (document.visibilityState === 'visible') doSync(); };
-document.addEventListener('visibilitychange', pull);
-window.addEventListener('pageshow', pull);
-window.addEventListener('focus', pull);
-setInterval(pull, 45000);
+// 동기화 시점: 앱을 열 때(복귀 포함) 받기·합치기, 닫을 때(백그라운드) 변경분이 있으면 올리기
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' || dirty) doSync();
+});
+window.addEventListener('pageshow', e => { if (e.persisted) doSync(); });
+window.addEventListener('pagehide', () => { if (dirty) doSync(); });
 
 /* ---------- init ---------- */
 fillSelects();
