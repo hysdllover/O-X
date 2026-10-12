@@ -1055,6 +1055,7 @@ function syncMsg(msg, err) {
   el.innerHTML = lastErr ? esc(lastErr) : `연결됨 · Gist <code>${esc(sync.gistId.slice(0, 8))}</code>` +
     (sync.count != null ? ` · 선지 ${sync.count}개` : '') +
     (sync.last ? ` · ${new Date(sync.last).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })} 동기화` : '') +
+    (sync.rl ? ` · 남은 요청 ${sync.rl.left}/${sync.rl.limit}` : '') +
     '<br>앱을 열 때·닫을 때만 동기화합니다 (필요하면 지금 동기화). 기기마다 Gist 앞 8자리가 같으면 정상입니다.';
 }
 // 수정 시에는 표시만 하고, 실제 동기화는 앱을 열 때·닫을 때만 (API 호출 최소화)
@@ -1062,11 +1063,18 @@ function scheduleSync() {
   dirty = true;
   if (sync.token && sync.gistId) setDot('pending');
 }
-async function gh(path, opt = {}) {
+// 요청 한도 기록: 남은 횟수 표시, 한도 초과 시 초기화 시각까지 요청 중단
+function noteRate(r) {
+  const left = r.headers.get('x-ratelimit-remaining'), limit = r.headers.get('x-ratelimit-limit'), reset = +r.headers.get('x-ratelimit-reset');
+  if (left != null) sync.rl = { left: +left, limit: +limit, reset: reset * 1000 };
+}
+async function gh(path, opt = {}, extra = {}) {
   const r = await fetch('https://api.github.com' + path, Object.assign({ cache: 'no-store' }, opt, {
     headers: Object.assign({ Accept: 'application/vnd.github+json', Authorization: 'Bearer ' + sync.token },
-      opt.body ? { 'Content-Type': 'application/json' } : {})
+      opt.body ? { 'Content-Type': 'application/json' } : {}, extra)
   }));
+  noteRate(r);
+  if (r.status === 304) return { notModified: true };
   if (!r.ok) {
     // GitHub이 알려 주는 실제 원인을 함께 표시
     let msg = ''; try { msg = (await r.json()).message || ''; } catch (e) {}
@@ -1080,19 +1088,32 @@ async function gh(path, opt = {}) {
       : '권한이 없습니다 (토큰의 gist 권한 확인)';
     else if (r.status === 404) ko = 'Gist를 찾을 수 없습니다 (Gist ID 또는 토큰 계정 확인)';
     else ko = '동기화 실패';
-    const err = new Error(`${ko}${msg ? ` — ${msg}` : ''} [${r.status}]`); err.status = r.status;
+    if (ko.startsWith('요청 한도')) { sync.blockedUntil = reset ? reset * 1000 : now() + 10 * 60e3; store.set(SKEY, sync); }
+    const err = new Error(`${ko}${msg ? ` — ${msg.split('. ')[0]}` : ''} [${r.status}]`); err.status = r.status;
     throw err;
   }
-  return r.json();
+  const etag = r.headers.get('etag');
+  const j = await r.json();
+  if (etag && j && typeof j === 'object') Object.defineProperty(j, '_etag', { value: etag });
+  return j;
 }
 function payload() { return JSON.stringify({ v: 1, app: 'ox', items: db.items, thinkers: db.thinkers, thinkersAt: db.thinkersAt || 0, units: db.units, unitsAt: db.unitsAt || 0, theme: db.theme, themeAt: db.themeAt || 0 }); }
+// 조건부 요청(ETag): 바뀐 게 없으면 304로 응답 → GitHub 요청 한도에서 차감되지 않음
+const GCACHE = 'ox.gcache.v1';
 async function readGist(id) {
-  const g = await gh('/gists/' + encodeURIComponent(id));
+  const cache = store.get(GCACHE, null);
+  const hit = cache && cache.id === id && cache.etag;
+  const g = await gh('/gists/' + encodeURIComponent(id), {}, hit ? { 'If-None-Match': cache.etag } : {});
+  if (g.notModified && hit) return { data: cache.data, desc: cache.desc };
   const f = g.files && g.files[GFILE], desc = g.description || '';
-  if (!f) return { data: { items: [] }, desc };
-  let c = f.content;
-  if (f.truncated) c = await (await fetch(f.raw_url, { cache: 'no-store' })).text();
-  try { return { data: JSON.parse(c || '{}'), desc }; } catch (e) { return { data: { items: [] }, desc }; }
+  let data = { items: [] };
+  if (f) {
+    let c = f.content;
+    if (f.truncated) c = await (await fetch(f.raw_url, { cache: 'no-store' })).text();
+    try { data = JSON.parse(c || '{}'); } catch (e) {}
+  }
+  if (g._etag) store.set(GCACHE, { id, etag: g._etag, data, desc });
+  return { data, desc };
 }
 // 선지노트 Gist 목록 (오래된 순). 병합 처리된 Gist는 제외
 const MERGED = '(병합됨) ';
@@ -1102,7 +1123,7 @@ async function listOxGists() {
     .sort((a, b) => a.created_at < b.created_at ? -1 : 1);
 }
 // 기기마다 다른 Gist가 생긴 경우: 가장 오래된 Gist 하나로 합치고 그쪽으로 전환
-let unified = false;
+let unified = true;   // 목록 조회는 연결할 때만 (요청 절약)
 async function unify() {
   unified = true;
   let list;
@@ -1143,6 +1164,10 @@ const sig = x => (x.items || []).map(i => i.id + ':' + (i.updatedAt || 0)).sort(
 async function doSync() {
   if (!sync.token || !sync.gistId) return;
   if (syncing) { dirty = true; return; }
+  if (sync.blockedUntil && now() < sync.blockedUntil) {
+    lastErr = `요청 한도 초과 · ${new Date(sync.blockedUntil).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })} 이후 앱을 다시 열면 동기화합니다`;
+    setDot('err'); syncMsg(); return;
+  }
   syncing = true; dirty = false;
   setDot('busy'); syncMsg('동기화 중…');
   try {
@@ -1155,9 +1180,11 @@ async function doSync() {
     save(true);
     if (sig(db) !== before) { OXTheme.apply(db.theme); fillSelects(); renderAll(); if (!$('#settings').hidden) { renderTheme(); renderChips(); renderUnits(); } }
     if (sig(db) !== sig(remote)) {
-      await gh('/gists/' + encodeURIComponent(sync.gistId), { method: 'PATCH', body: JSON.stringify({ files: { [GFILE]: { content: payload() } } }) });
+      const body = payload();
+      const g = await gh('/gists/' + encodeURIComponent(sync.gistId), { method: 'PATCH', body: JSON.stringify({ files: { [GFILE]: { content: body } } }) });
+      if (g._etag) store.set(GCACHE, { id: sync.gistId, etag: g._etag, data: JSON.parse(body), desc: g.description || '' });
     }
-    sync.last = now(); sync.count = live().length; store.set(SKEY, sync); lastErr = '';
+    sync.last = now(); sync.count = live().length; delete sync.blockedUntil; store.set(SKEY, sync); lastErr = '';
     setDot('ok'); syncMsg();
   } catch (e) {
     lastErr = e.message || '네트워크 오류'; setDot('err'); syncMsg();
