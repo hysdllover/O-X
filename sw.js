@@ -1,4 +1,4 @@
-const CACHE = 'ox-v8';
+const CACHE = 'ox-v9';
 const SHELL = ['./', 'index.html', 'manifest.webmanifest', 'icon.svg', 'apple-touch-icon.png'];
 const FONT_HOSTS = ['cdn.jsdelivr.net', 'fonts.googleapis.com', 'fonts.gstatic.com'];
 
