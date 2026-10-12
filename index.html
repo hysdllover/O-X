@@ -186,8 +186,9 @@ select{-webkit-appearance:none;appearance:none;padding-right:28px;
 .sheetwrap{background:var(--line);border-radius:var(--r);padding:12px;overflow:hidden}
 .sheetbox{position:relative}
 .sheet{background:#fff;color:#2b2f38;width:210mm;margin:0 auto;padding:14mm 12mm;font:var(--fw) 10pt/1.5 var(--sans);letter-spacing:.02em;transform-origin:top left}
-/* 정리본 타이포 규칙: 글꼴 하나(본문 폰트), 크기 3단계(제목 14pt · 본문 10pt · 보조 8pt), 행간 1.5, 칸 여백 4px 6px */
+/* 정리본 타이포 규칙: 설정 폰트 그대로(제목·소제목 = 제목 폰트, 나머지 = 본문 폰트), 크기 3단계(제목 14pt · 본문 10pt · 보조 8pt), 행간 1.5, 칸 여백 4px 6px */
 .sheet *{font-family:inherit;letter-spacing:inherit;line-height:1.5}
+.sheet h1,.sheet h3{font-family:var(--serif)}
 .sheet h1{font-size:14pt;font-weight:400;margin:0}
 .sheet .sub{display:flex;flex-wrap:wrap;gap:0 12px;justify-content:space-between;font-size:8pt;color:#8a8f99;
   margin:4px 0 12px;padding-bottom:6px;border-bottom:.5px solid #c9ccd3}
