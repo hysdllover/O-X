@@ -185,23 +185,25 @@ select{-webkit-appearance:none;appearance:none;padding-right:28px;
 .popts .row+.row{margin-top:8px}
 .sheetwrap{background:var(--line);border-radius:var(--r);padding:12px;overflow:hidden}
 .sheetbox{position:relative}
-.sheet{background:#fff;color:#2b2f38;width:210mm;margin:0 auto;padding:14mm 12mm;font:var(--fw) 10pt/1.5 var(--sans);transform-origin:top left}
-.sheet h1{font:var(--fw) 15pt var(--serif);letter-spacing:.08em;margin:0}
-.sheet .sub{display:flex;flex-wrap:wrap;gap:2px 12px;justify-content:space-between;font-size:7.5pt;color:#8a8f99;letter-spacing:.1em;
-  margin:5px 0 12px;padding-bottom:6px;border-bottom:.5px solid #c9ccd3}
-.sheet h3{font:400 10pt var(--serif);color:var(--c-navy);letter-spacing:.08em;margin:14px 0 4px;break-after:avoid}
+.sheet{background:#fff;color:#2b2f38;width:210mm;margin:0 auto;padding:14mm 12mm;font:var(--fw) 10pt/1.5 var(--sans);letter-spacing:.02em;transform-origin:top left}
+/* 정리본 타이포 규칙: 글꼴 하나(본문 폰트), 크기 3단계(제목 14pt · 본문 10pt · 보조 8pt), 행간 1.5, 칸 여백 4px 6px */
+.sheet *{font-family:inherit;letter-spacing:inherit;line-height:1.5}
+.sheet h1{font-size:14pt;font-weight:400;margin:0}
+.sheet .sub{display:flex;flex-wrap:wrap;gap:0 12px;justify-content:space-between;font-size:8pt;color:#8a8f99;
+  margin:4px 0 12px;padding-bottom:6px;border-bottom:.5px solid #c9ccd3}
+.sheet h3{font-size:10pt;font-weight:400;color:var(--c-navy);margin:14px 0 4px;break-after:avoid}
 .sheet table{width:100%;border-collapse:collapse;table-layout:fixed}
-.sheet th{font-weight:400;font-size:7pt;color:#8a8f99;letter-spacing:.1em;text-align:left;padding:3px 5px;border-bottom:.5px solid #c9ccd3}
-.sheet td{padding:4px 5px;border-bottom:.5px solid #e4e5e9;vertical-align:top}
+.sheet th,.sheet td{padding:4px 6px;vertical-align:baseline}
+.sheet th{font-size:8pt;font-weight:400;color:#8a8f99;text-align:left;border-bottom:.5px solid #c9ccd3;vertical-align:bottom}
+.sheet td{border-bottom:.5px solid #e4e5e9}
 .sheet tr{break-inside:avoid}
-.sheet .no{width:24px;color:#a0a5ae;font-size:7.5pt;padding-top:5px}
-.sheet .tx{display:block;word-break:keep-all;overflow-wrap:normal;line-height:1.5}
-.sheet .nt{display:block;color:var(--c-navy);font-size:8pt;word-break:keep-all;margin-top:1px}
-.sheet .a{width:30px;text-align:center;font:400 10pt var(--serif)}
-.sheet .a.O{color:var(--c-olive)} .sheet .a.X{color:var(--c-rose)}
-.sheet th.tc{width:46px;text-align:center;font-size:6.5pt;letter-spacing:0;word-break:break-all;line-height:1.3;padding:3px 2px;vertical-align:bottom}
-.sheet th.a{font:400 6.5pt var(--sans);letter-spacing:0;text-align:center;padding:3px 2px;color:var(--c-navy);width:46px;word-break:break-all;line-height:1.3;vertical-align:bottom}
-.sheet td.a.tc{width:46px}
+.sheet .no{width:28px;font-size:8pt;color:#a0a5ae}
+.sheet .tx{display:block;word-break:keep-all;overflow-wrap:normal}
+.sheet .nt{display:block;font-size:8pt;color:var(--c-navy);word-break:keep-all}
+.sheet .a{width:48px;padding-left:2px;padding-right:2px;text-align:center;font-size:10pt;font-weight:400}
+.sheet th.a{font-size:8pt;word-break:break-all}
+.sheet th.a:not(.tc){color:var(--c-navy)}
+.sheet td.a.O{color:var(--c-olive)} .sheet td.a.X{color:var(--c-rose)}
 .sheet .empty{color:#aaa}
 
 /* settings overlay */
@@ -829,7 +831,7 @@ function renderPrint() {
     const ansOf = i => k === '미분류' ? i.answer : (allStances(i).find(s => s.t === k) || {}).a;
     const cols = [...new Set(list.flatMap(i => allStances(i).map(s => s.t)))].filter(t => t !== k).sort((a, b) => rank(a) - rank(b));
     return `<h3>${esc(k)}</h3><table>
-    <thead><tr><th class="no">No</th><th>선지</th><th class="a">${k === '미분류' ? '정답' : esc(k)}</th>${cols.map(t => `<th class="tc">${esc(t)}</th>`).join('')}</tr></thead>
+    <thead><tr><th class="no">No</th><th>선지</th><th class="a">${k === '미분류' ? '정답' : esc(k)}</th>${cols.map(t => `<th class="a tc">${esc(t)}</th>`).join('')}</tr></thead>
     <tbody>${list.map(i => {
       const a = ansOf(i) || '';
       return `<tr><td class="no">${++n}</td><td>${txt(i)}</td><td class="a ${a}">${a}</td>${cols.map(t => {
